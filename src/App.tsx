@@ -12,10 +12,11 @@ import {
 import { Hero } from './components/home/Hero'
 import { HomeNav } from './components/home/HomeNav'
 import { useCurrentBatch } from './lib/useCatalog'
+import { asset } from './lib/basePath'
 
 // All-keyframe MP4s re-encoded for scroll scrubbing (see docs/video-scrub.md).
-const videoSrc = '/media/scrub/coffee-scrub-1080.mp4'
-const videoSmallSrc = '/media/scrub/coffee-scrub-720.mp4'
+const videoSrc = asset('/media/scrub/coffee-scrub-1080.mp4')
+const videoSmallSrc = asset('/media/scrub/coffee-scrub-720.mp4')
 
 /**
  * Home page, structured per docs/redesign/BRIEF.md §6: hook, proof band,

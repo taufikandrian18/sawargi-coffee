@@ -26,6 +26,7 @@ mkdir -p .claude/skills && cp -r design-skills/* .claude/skills/   # make the de
 - `npm run lint`: ESLint (warnings OK, 0 errors).
 - `npm run build`: production build into `dist/`.
 - `VITE_WC_URL=https://shop.example.com npm run dev`: run against a live WooCommerce store.
+- `SITE_BASE_PATH=/sawargi-coffee npm run build`: build for a path instead of a domain root.
 
 Run tests, the type-check and lint before every commit. Don't claim something works visually unless
 you've seen a screenshot.
@@ -43,7 +44,8 @@ you've seen a screenshot.
 | `src/pages/JournalPage.tsx` | Journal index + researched article. Evidence notes are in `docs/research/` |
 | `src/data/catalog.ts`, `src/lib/catalog.tsx` | The catalogue the site renders: sample data, or live batches/stock from WooCommerce when `VITE_WC_URL` is set |
 | `wordpress/mu-plugins/sawargi-headless.php` | WordPress plugin: batch fields in WP admin + `extensions.sawargi` on the Store API. Contract-tested by `src/data/contract.test.ts` |
-| `deploy/` | VPS stack: Caddy + WordPress (PHP-FPM) + MariaDB via Docker Compose, plus build/bootstrap/backup scripts. Guide: `docs/cms/WORDPRESS.md` |
+| `deploy/` | VPS stack under `website.taufikandrian.my.id/sawargi-coffee` (WordPress at `/sawargi-coffee/shop`): Caddy (127.0.0.1:8088, behind the host's nginx/Apache) + WordPress (PHP-FPM) + MariaDB via Docker Compose, plus build/bootstrap/backup scripts. Guide: `docs/cms/WORDPRESS.md` |
+| `src/lib/basePath.ts` | `withBase`/`stripBase`/`asset`: the site can be built under a path (`SITE_BASE_PATH`). Never hard-code `/media/...` or route hrefs outside `Link`/`asset()` |
 
 ## Rules
 

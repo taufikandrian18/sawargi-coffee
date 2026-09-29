@@ -17,6 +17,7 @@ import { PaperEdge } from '../ui/PaperEdge'
 import { SplitReveal } from '../ui/SplitReveal'
 import { Wiggle } from '../ui/Wiggle'
 import { MiniCta } from './MiniCta'
+import { asset } from '../../lib/basePath'
 
 /*
  * Home page chapters (BRIEF §6). Dark bands let the scrub video show through;
@@ -174,9 +175,9 @@ export function OneChapter() {
 
 // Real order of the work (BRIEF §9 D9): cherry → roast and cup → the bag.
 const PROCESS_STEPS = [
-  { key: 'clean', still: '/media/stills/step-1.webp' },
-  { key: 'process', still: '/media/stills/step-2.webp' },
-  { key: 'proof', still: '/media/stills/step-3.webp' }
+  { key: 'clean', still: asset('/media/stills/step-1.webp') },
+  { key: 'process', still: asset('/media/stills/step-2.webp') },
+  { key: 'proof', still: asset('/media/stills/step-3.webp') }
 ] as const
 
 type StepStatus = 'before' | 'active' | 'after'
