@@ -4,6 +4,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { copy, navItems } from '../../content/copy'
 import { Link } from '../../lib/router'
+import { asset } from '../../lib/basePath'
 import { scrollToHash, setScrollLocked } from '../../lib/smoothScroll'
 import { InkButton } from '../ui/InkButton'
 
@@ -20,13 +21,13 @@ function Logo() {
     <a href="#top" aria-label="sawargi home" className="nav-focus nav-logo flex min-h-11 items-center py-2 pr-2 md:min-h-12">
       <span data-testid="sawargi-logo" className="sawargi-composite-logo flex items-center">
         <img
-          src="/brand/sawargi-mark-white-cropped.png"
+          src={asset('/brand/sawargi-mark-white-cropped.png')}
           alt=""
           data-testid="sawargi-logo-mark"
           className="h-7 w-7 shrink-0 object-contain md:h-8 md:w-8"
         />
         <img
-          src="/brand/sawargi-wordmark-white-cropped.png"
+          src={asset('/brand/sawargi-wordmark-white-cropped.png')}
           alt=""
           data-testid="sawargi-logo-wordmark"
           className="h-[1.125rem] w-auto object-contain md:h-6"

@@ -46,7 +46,14 @@ const hlsMimeHeaders = (): Plugin => {
   }
 }
 
+/**
+ * Where the site is served from. '/' by default; deploy/build-site.sh sets
+ * SITE_BASE_PATH (e.g. /sawargi-coffee) when the site lives under a path.
+ */
+const base = `/${(process.env.SITE_BASE_PATH ?? '').replace(/^\/+|\/+$/g, '')}/`.replace(/^\/\/$/, '/')
+
 export default defineConfig({
+  base,
   plugins: [react(), hlsMimeHeaders()],
   test: {
     environment: 'jsdom',

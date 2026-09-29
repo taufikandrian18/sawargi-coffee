@@ -1,5 +1,6 @@
 import type { AnchorHTMLAttributes, MouseEvent } from 'react'
 import { useEffect, useState } from 'react'
+import { stripBase, withBase } from './basePath'
 import { jumpToTop } from './smoothScroll'
 
 /**
@@ -10,17 +11,18 @@ import { jumpToTop } from './smoothScroll'
 const NAVIGATE_EVENT = 'sawargi:navigate'
 
 export function navigate(to: string) {
-  if (to === window.location.pathname + window.location.hash) return
-  window.history.pushState({}, '', to)
+  const url = withBase(to)
+  if (url === window.location.pathname + window.location.hash) return
+  window.history.pushState({}, '', url)
   window.dispatchEvent(new Event(NAVIGATE_EVENT))
   if (!to.includes('#')) jumpToTop()
 }
 
 export function usePathname() {
-  const [pathname, setPathname] = useState(() => window.location.pathname)
+  const [pathname, setPathname] = useState(() => stripBase(window.location.pathname))
 
   useEffect(() => {
-    const update = () => setPathname(window.location.pathname)
+    const update = () => setPathname(stripBase(window.location.pathname))
     window.addEventListener('popstate', update)
     window.addEventListener(NAVIGATE_EVENT, update)
     return () => {
@@ -51,5 +53,5 @@ export function Link({ to, onClick, ...rest }: LinkProps) {
     navigate(to)
   }
 
-  return <a href={to} onClick={handleClick} {...rest} />
+  return <a href={withBase(to)} onClick={handleClick} {...rest} />
 }

@@ -1,3 +1,4 @@
+import { asset } from '../lib/basePath'
 import { Link } from '../lib/router'
 
 /** Header for sub-pages (checkout, journal). The home page keeps its own nav. */
@@ -18,12 +19,12 @@ export function SiteHeader({ current }: { current?: 'journal' | 'checkout' }) {
         <Link to="/" aria-label="sawargi home" className="nav-focus flex min-h-11 items-center">
           <span className="sawargi-composite-logo flex items-center">
             <img
-              src="/brand/sawargi-mark-white-cropped.png"
+              src={asset('/brand/sawargi-mark-white-cropped.png')}
               alt=""
               className="h-7 w-7 shrink-0 object-contain"
             />
             <img
-              src="/brand/sawargi-wordmark-white-cropped.png"
+              src={asset('/brand/sawargi-wordmark-white-cropped.png')}
               alt=""
               className="h-[1.125rem] w-auto object-contain"
             />

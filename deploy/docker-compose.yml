@@ -1,7 +1,9 @@
-# Sawargi on one VPS: the designed site + WordPress/WooCommerce behind Caddy.
-#   https://SITE_DOMAIN        → the React site (static files in ./site)
-#   https://SHOP_DOMAIN        → WordPress + WooCommerce (admin, checkout, payment plugins)
-# See docs/cms/WORDPRESS.md for the full walkthrough.
+# Sawargi on one VPS, under a path of a domain your existing web server already serves:
+#   ${PUBLIC_URL}${BASE_PATH}/                → the React site (static files in ./site)
+#   ${PUBLIC_URL}${BASE_PATH}/shop/           → WordPress + WooCommerce (checkout, payment plugins)
+#   ${PUBLIC_URL}${BASE_PATH}/shop/wp-admin/  → WP admin (${BASE_PATH}/wp-admin redirects here)
+# Your host web server (nginx/Apache) keeps ports 80/443 and HTTPS, and forwards
+# ${BASE_PATH} to this stack on 127.0.0.1:${HTTP_PORT}. See docs/cms/WORDPRESS.md.
 
 name: sawargi
 
@@ -10,17 +12,15 @@ services:
     image: caddy:2
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      # Localhost only: the host web server is the public entrance.
+      - "127.0.0.1:${HTTP_PORT:-8088}:80"
     environment:
-      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in deploy/.env}
-      SHOP_DOMAIN: ${SHOP_DOMAIN:?set SHOP_DOMAIN in deploy/.env}
-      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in deploy/.env}
+      BASE_PATH: ${BASE_PATH:?set BASE_PATH in deploy/.env, e.g. /sawargi-coffee}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./site:/srv/site:ro
-      - wp_data:/var/www/html:ro
+      # WordPress lives at the same path on disk as in the URL, so PHP sees ordinary subfolder paths.
+      - wp_data:/srv/wp${BASE_PATH}/shop:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -29,20 +29,23 @@ services:
   wordpress:
     image: wordpress:6-php8.3-fpm
     restart: unless-stopped
+    # The image installs WordPress into its working directory on first start.
+    working_dir: /srv/wp${BASE_PATH}/shop
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_NAME: ${DB_NAME:-sawargi}
       WORDPRESS_DB_USER: ${DB_USER:-sawargi}
       WORDPRESS_DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in deploy/.env}
+      # The image's wp-config already trusts X-Forwarded-Proto: https from the proxy chain.
       WORDPRESS_CONFIG_EXTRA: |
-        define('WP_HOME', 'https://${SHOP_DOMAIN}');
-        define('WP_SITEURL', 'https://${SHOP_DOMAIN}');
-        define('SAWARGI_FRONTEND_ORIGIN', 'https://${SITE_DOMAIN}');
-        define('SAWARGI_FRONTEND_URL', 'https://${SITE_DOMAIN}');
+        define('WP_HOME', '${PUBLIC_URL:?set PUBLIC_URL in deploy/.env}${BASE_PATH}/shop');
+        define('WP_SITEURL', '${PUBLIC_URL}${BASE_PATH}/shop');
+        define('SAWARGI_FRONTEND_ORIGIN', '${PUBLIC_URL}');
+        define('SAWARGI_FRONTEND_URL', '${PUBLIC_URL}${BASE_PATH}/');
         define('DISALLOW_FILE_EDIT', true);
     volumes:
-      - wp_data:/var/www/html
-      - ../wordpress/mu-plugins/sawargi-headless.php:/var/www/html/wp-content/mu-plugins/sawargi-headless.php:ro
+      - wp_data:/srv/wp${BASE_PATH}/shop
+      - ../wordpress/mu-plugins/sawargi-headless.php:/srv/wp${BASE_PATH}/shop/wp-content/mu-plugins/sawargi-headless.php:ro
       - ./php-uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
     depends_on:
       - db
@@ -64,14 +67,18 @@ services:
     image: wordpress:cli-php8.3
     profiles: ["tools"]
     user: "33:33"
+    working_dir: /srv/wp${BASE_PATH}/shop
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_NAME: ${DB_NAME:-sawargi}
       WORDPRESS_DB_USER: ${DB_USER:-sawargi}
       WORDPRESS_DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in deploy/.env}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', '${PUBLIC_URL}${BASE_PATH}/shop');
+        define('WP_SITEURL', '${PUBLIC_URL}${BASE_PATH}/shop');
     volumes:
-      - wp_data:/var/www/html
-      - ../wordpress/mu-plugins/sawargi-headless.php:/var/www/html/wp-content/mu-plugins/sawargi-headless.php:ro
+      - wp_data:/srv/wp${BASE_PATH}/shop
+      - ../wordpress/mu-plugins/sawargi-headless.php:/srv/wp${BASE_PATH}/shop/wp-content/mu-plugins/sawargi-headless.php:ro
     depends_on:
       - db
 

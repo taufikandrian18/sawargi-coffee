@@ -8,12 +8,21 @@ cd "$(dirname "$0")"
 # shellcheck disable=SC1091
 set -a; source .env; set +a
 wp() { docker compose run --rm -T wpcli wp "$@"; }
+shop_url="${PUBLIC_URL}${BASE_PATH}/shop"
+
+case "${DB_PASSWORD}${DB_ROOT_PASSWORD}" in
+  *change-me*) echo "Set real DB_PASSWORD and DB_ROOT_PASSWORD in deploy/.env first (see docs/cms/WORDPRESS.md)."; exit 1 ;;
+esac
 
 if ! wp core is-installed >/dev/null 2>&1; then
-  password="$(openssl rand -base64 18)"
-  wp core install --url="https://${SHOP_DOMAIN}" --title="Sawargi Shop" \
+  password="${WP_ADMIN_PASSWORD:-$(openssl rand -base64 18)}"
+  wp core install --url="${shop_url}" --title="Sawargi Shop" \
     --admin_user="${WP_ADMIN_USER}" --admin_email="${WP_ADMIN_EMAIL}" --admin_password="${password}" --skip-email
-  echo "Admin user ${WP_ADMIN_USER} created. Password (save it now, it isn't stored): ${password}"
+  if [ -n "${WP_ADMIN_PASSWORD:-}" ]; then
+    echo "Admin user ${WP_ADMIN_USER} created with the password from deploy/.env. Delete WP_ADMIN_PASSWORD from it now."
+  else
+    echo "Admin user ${WP_ADMIN_USER} created. Password (save it now, it isn't stored): ${password}"
+  fi
 fi
 
 wp rewrite structure '/%postname%/' --hard
@@ -43,7 +52,7 @@ for term in "Whole bean" "Coarse" "Medium" "Fine"; do
 done
 
 echo
-echo "Done. Next, in https://${SHOP_DOMAIN}/wp-admin :"
+echo "Done. Next, in ${PUBLIC_URL}${BASE_PATH}/wp-admin :"
 echo "  1. Install a payment plugin (WooCommerce → Settings → Payments), e.g. Midtrans or Xendit."
 echo "  2. Add each batch as a product (docs/cms/WORDPRESS.md, 'Adding a batch')."
 echo "  3. Set up shipping zones (WooCommerce → Settings → Shipping)."

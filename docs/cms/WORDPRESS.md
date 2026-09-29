@@ -3,14 +3,28 @@
 This site stays the storefront. WordPress + WooCommerce become the back office: batches, stock,
 prices, orders and payments are all managed in WP admin, never in code.
 
+Everything lives under one path of a domain your VPS already serves:
+
 ```
-Visitor ──► https://SITE_DOMAIN  (this React site, static files served by Caddy)
-              │  reads batches + live stock from the public Store API (no keys in the browser)
-              ▼
-            https://SHOP_DOMAIN  (WordPress + WooCommerce on PHP-FPM, MariaDB)
-              ▲  "Continue to payment" hands the chosen batch/grind/quantity to WooCommerce's
-              │  own checkout, where delivery details and payment plugins run
+https://website.taufikandrian.my.id/sawargi-coffee/            the designed site (React, static)
+https://website.taufikandrian.my.id/sawargi-coffee/shop/       WordPress + WooCommerce (cart, checkout, payments)
+https://website.taufikandrian.my.id/sawargi-coffee/wp-admin    → redirects to …/shop/wp-admin/
+
+Browser ──HTTPS──► host nginx/Apache (keeps ports 80/443 and the certificate)
+                     └─ /sawargi-coffee/* ──► 127.0.0.1:8088  Caddy container
+                                                ├─ /sawargi-coffee/shop/* → PHP-FPM (WordPress) → MariaDB
+                                                └─ everything else       → the built site, SPA fallback
 ```
+
+The site reads batches and live stock from WooCommerce's public Store API (same origin, no keys
+in the browser). "Continue to payment" hands the chosen batch, grind and quantity to
+WooCommerce's own checkout, where delivery details and payment plugins run.
+
+**Why WordPress sits under `/shop` and not at `/sawargi-coffee` itself:** both the site and
+WooCommerce have a `/checkout` page, and WordPress owns every URL under its home path (payment
+callbacks, cart, account, REST API). Sharing one path means a fragile list of which URLs belong
+to whom; a separate `/shop` folder means one clean rule. The short `/sawargi-coffee/wp-admin` URL
+still works (it redirects).
 
 ## What is managed where
 
@@ -35,27 +49,63 @@ theme) and set its colours to the brand tokens (`#0c0a08` ink, `#ece6da` paper, 
 ## 1. The VPS
 
 - Ubuntu 22.04/24.04, **2 GB RAM minimum** (WooCommerce + MariaDB are heavy on 1 GB), 20 GB disk.
-- DNS: A (and AAAA) records for both `SITE_DOMAIN` and `SHOP_DOMAIN` (and `www.SITE_DOMAIN`)
-  pointing at the VPS, **before** first start, so Caddy can get certificates.
-- Firewall: allow 22, 80 and 443 only.
-  ```bash
-  sudo ufw allow OpenSSH && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable
-  ```
-- Install Docker (with the compose plugin), Node 22, git and rsync.
+- The existing web server for `website.taufikandrian.my.id` (nginx or Apache, with its HTTPS
+  certificate) stays as it is. This stack doesn't touch ports 80/443; it listens on
+  `127.0.0.1:8088` only.
+- Docker with the compose plugin, git and rsync. Node is **not** needed on the VPS: the site is
+  built inside a throwaway `node:22` container.
 
 ## 2. First deploy
 
 ```bash
-sudo mkdir -p /opt/sawargi && sudo chown "$USER" /opt/sawargi
-git clone https://github.com/taufikandrian18/sawargi-coffee.git /opt/sawargi
-cd /opt/sawargi
-cp deploy/.env.example deploy/.env      # then edit: domains, email, long random passwords
-cd deploy && docker compose up -d && cd ..
-./deploy/bootstrap-wordpress.sh         # installs WordPress + WooCommerce, IDR, batch category, Grind attribute
-./deploy/build-site.sh                  # builds this site against the store and publishes it
+cd /opt/sawargi-coffee
+sudo chown -R "$USER": .                  # the scripts and the build write here as you, not root
+cp deploy/.env.example deploy/.env
+nano deploy/.env                          # DB passwords (openssl rand -base64 24), admin user + email
 ```
 
-`bootstrap-wordpress.sh` prints the admin password once. Save it in a password manager.
+Set the database passwords **before** the first `docker compose up`: MariaDB keeps the password
+it first starts with. If you already started it with the `change-me` placeholders, wipe the
+empty stack first: `cd deploy && docker compose down -v`. That deletes all WordPress data, which
+is fine only before you've added anything.
+
+```bash
+cd deploy && docker compose up -d && cd ..
+./deploy/bootstrap-wordpress.sh           # installs WordPress + WooCommerce, IDR, batch category, Grind attribute
+./deploy/build-site.sh                    # builds this site for /sawargi-coffee and publishes it
+```
+
+Then point the host web server at the stack.
+
+**nginx:** paste `deploy/nginx-sawargi.conf` into the `server { … }` block that has
+`listen 443 ssl` for `website.taufikandrian.my.id`, then run
+`sudo nginx -t && sudo systemctl reload nginx`.
+
+**Apache:** run `sudo a2enmod proxy proxy_http headers`, then add this to the `:443` VirtualHost
+and run `sudo apachectl configtest && sudo systemctl reload apache2`:
+
+```apache
+ProxyPreserveHost On
+RequestHeader set X-Forwarded-Proto "https"
+ProxyPass        /sawargi-coffee http://127.0.0.1:8088/sawargi-coffee
+ProxyPassReverse /sawargi-coffee http://127.0.0.1:8088/sawargi-coffee
+```
+
+Not sure which one you run? `sudo ss -ltnp | grep -E ':(80|443) '` shows the process holding
+the ports.
+
+Check it:
+
+```bash
+curl -I http://127.0.0.1:8088/sawargi-coffee/                 # 200, straight from the stack
+curl -s https://website.taufikandrian.my.id/sawargi-coffee/shop/wp-json/wc/store/v1/products?category=batch | head -c 400
+```
+
+After you add a batch, the second command must show `"extensions":{"sawargi":{…}}`. If
+`extensions` is empty, the plugin isn't loaded: check **Plugins → Must-Use** in WP admin.
+
+`bootstrap-wordpress.sh` uses `WP_ADMIN_PASSWORD` from `.env` if you set one; otherwise it prints
+a random one once. Either way, keep it in a password manager and remove it from `.env`.
 
 ## 3. Adding a batch (the weekly job)
 
@@ -83,11 +133,14 @@ sandbox first.
 
 ## 5. Updating the site
 
-After pulling new code, or after changing `SITE_DOMAIN`/`SHOP_DOMAIN`:
+After pulling new code, or after changing `PUBLIC_URL`/`BASE_PATH`:
 
 ```bash
-cd /opt/sawargi && git pull && ./deploy/build-site.sh
+cd /opt/sawargi-coffee && git pull && ./deploy/build-site.sh
 ```
+
+If you changed `PUBLIC_URL`/`BASE_PATH`, also run `cd deploy && docker compose up -d`, so
+WordPress picks up its new address.
 
 Stock and batches **don't** need a rebuild; the site reads them live.
 
@@ -103,17 +156,23 @@ Add it to cron (see the top of the script) **and copy the backups off the VPS**
 ## 7. Security checklist
 
 - Strong unique passwords in `deploy/.env`; never commit it (it's git-ignored).
+- The admin login is public at `/sawargi-coffee/wp-admin`. Don't use `admin` as the username (it's
+  the first one bots try), use a long generated password, and add a login-limiting or 2FA plugin
+  (e.g. Limit Login Attempts Reloaded, Two Factor).
 - Keep WordPress, WooCommerce and plugins updated (WP admin → Updates), weekly.
 - Only install plugins you need, from reputable authors.
 - `DISALLOW_FILE_EDIT` is on (no code editing from WP admin); `xmlrpc.php` is blocked by Caddy.
-- The REST API only answers browser requests from `SITE_DOMAIN` (`SAWARGI_FRONTEND_ORIGIN`).
+- The stack listens on 127.0.0.1 only; the database has no port at all.
 
 ## How the pieces talk (for developers)
 
-- **Catalogue:** `GET https://SHOP_DOMAIN/wp-json/wc/store/v1/products?category=batch` →
+- **Catalogue:** `GET ${PUBLIC_URL}${BASE_PATH}/shop/wp-json/wc/store/v1/products?category=batch` →
   `src/data/catalog.ts` maps each product to a batch. Batch fields and the live stock count come
   from `extensions.sawargi`, added by `wordpress/mu-plugins/sawargi-headless.php`.
-- **Hand-off:** `https://SHOP_DOMAIN/checkout/?add-to-cart=<variation id>&quantity=<n>`.
+- **Hand-off:** `${PUBLIC_URL}${BASE_PATH}/shop/checkout/?add-to-cart=<variation id>&quantity=<n>`.
+- **Base path:** `SITE_BASE_PATH=/sawargi-coffee` at build time sets Vite's `base`. Routes and
+  `public/` files go through `src/lib/basePath.ts` (`withBase`, `stripBase`, `asset`), so code keeps
+  writing `/checkout` and `/media/...`.
 - **No store configured** (`VITE_WC_URL` unset): the site uses the sample data in
   `src/data/shop.ts` and the demo checkout. Local dev and tests work this way.
 - **Store unreachable:** the site says stock is unavailable. It never shows sample stock.
@@ -123,9 +182,12 @@ Add it to cron (see the top of the script) **and copy the backups off the VPS**
 ## Verified vs not yet verified
 
 Verified in development: the site's mapping and hand-off (unit tests with Store API fixtures),
-the plugin's PHP (syntax check and a stubbed run), `docker compose config`.
+the plugin's PHP (syntax check and a stubbed run), `docker compose config`, and a production build
+under `/sawargi-coffee` in a browser behind a server that mimics the Caddyfile's routes (assets, video
+range requests, deep links, hand-off URL, the wp-admin redirect).
 
 **Not yet verified against a live WordPress** (the build environment couldn't download
 WordPress): the Store API extension registering on a real WooCommerce, the `add-to-cart` hand-off
-on a real checkout, `bootstrap-wordpress.sh`, the Caddyfile, and a payment plugin end to end. Do a
+on a real checkout, `bootstrap-wordpress.sh`, the Caddyfile itself, WordPress running from a
+subfolder behind two proxies, and a payment plugin end to end. Do a
 full test order in the gateway's sandbox before going live.
