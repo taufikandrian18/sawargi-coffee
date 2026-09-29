@@ -7,7 +7,12 @@ cd "$(dirname "$0")"
 
 # shellcheck disable=SC1091
 set -a; source .env; set +a
-wp() { docker compose run --rm -T wpcli wp "$@"; }
+# Each WP-CLI call is announced, so a stall shows which step it's on, and capped at
+# 10 minutes, so a hung network call fails instead of waiting forever.
+wp() {
+  echo "==> wp $1 ${2:-}" >&2
+  timeout 600 docker compose run --rm -T wpcli wp "$@"
+}
 shop_url="${PUBLIC_URL}${BASE_PATH}/shop"
 
 case "${DB_PASSWORD}${DB_ROOT_PASSWORD}" in
