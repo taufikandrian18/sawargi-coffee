@@ -5,7 +5,27 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Readex Pro', 'system-ui', '-apple-system', 'sans-serif']
+        sans: ['Readex Pro', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['var(--font-display)'],
+        // Named 'plex', not 'mono': overriding Tailwind's font-mono would restyle checkout.
+        plex: ['var(--font-mono)']
+      },
+      // Redesign tokens (BRIEF §4); values live in src/styles/tokens.css.
+      colors: {
+        ink: 'var(--ink)',
+        char: 'var(--char)',
+        panel: 'var(--panel)',
+        paper: 'var(--paper)',
+        'paper-mut': 'var(--paper-mut)',
+        'ink-mut': 'var(--ink-mut)',
+        cherry: 'var(--cherry)'
+      },
+      borderRadius: {
+        card: 'var(--radius-card)'
+      },
+      transitionTimingFunction: {
+        text: 'var(--ease-text)',
+        card: 'var(--ease-card)'
       },
       keyframes: {
         'fade-rise': {
