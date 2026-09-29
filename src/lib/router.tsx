@@ -1,5 +1,6 @@
 import type { AnchorHTMLAttributes, MouseEvent } from 'react'
 import { useEffect, useState } from 'react'
+import { jumpToTop } from './smoothScroll'
 
 /**
  * Minimal pushState router. The site has three routes, so a full router
@@ -12,13 +13,7 @@ export function navigate(to: string) {
   if (to === window.location.pathname + window.location.hash) return
   window.history.pushState({}, '', to)
   window.dispatchEvent(new Event(NAVIGATE_EVENT))
-  if (!to.includes('#')) {
-    try {
-      window.scrollTo({ top: 0 })
-    } catch {
-      // jsdom does not implement scrollTo
-    }
-  }
+  if (!to.includes('#')) jumpToTop()
 }
 
 export function usePathname() {

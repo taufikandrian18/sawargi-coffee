@@ -326,7 +326,7 @@ can't drift from them.
 | Key | Text |
 | --- | --- |
 | nav | story · one roast · process · order · journal · **Buy Now** |
-| hero.line1 | Quitely **Roasted** *(see §9 D1: typo)* |
+| hero.line1 | Quietly **Roasted** *(§9 D1: typo "Quitely" corrected)* |
 | hero.line2 | Never **Rushed** |
 | story.eyebrow / title | our story / Born When the Cafes Went Quiet |
 | story.p1 | Before 2020, coffee in Bandung wasn't something you drank alone - it was something you did with people. A cup outside, a bit of time, a few friends. |
@@ -458,7 +458,7 @@ Rules for the flow:
 
 | # | Question | Default if unanswered |
 | --- | --- | --- |
-| D1 | The hero says **"Quitely"**. Is that a typo for "Quietly"? It's also pinned in `App.test.tsx`. | Keep verbatim, flag in the PR description |
+| D1 | The hero said **"Quitely"**. Is that a typo for "Quietly"? | **Decided 29 Sep 2026:** corrected to "Quietly" |
 | D2 | Proof item "Best enjoyed within **[X]** days of roast": what's X? | Render as written, flag |
 | D3 | The eyebrows "call to action" and "the scarcity angle" look like internal labels. Keep them as visible text? | Keep verbatim (copy rule), flag |
 | D4 | Add the Matter.js draggable bean field like the reference? It's +~90 KB of JS and mostly a novelty. | No; use the CSS `BeanDrift` only |

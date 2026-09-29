@@ -179,6 +179,399 @@
   }
 }
 
+/* ---- Batch Ticket: the signature element (BRIEF §4). ---- */
+@layer components {
+  .batch-ticket {
+    --ticket-shadow: var(--char);
+    --stub: 26px;
+    display: block;
+    /* Size the code and stamp from the ticket's own width, not the viewport. */
+    container-type: inline-size;
+    width: 100%;
+    color: var(--char);
+    /* 1px outline that follows the punched holes (so the ticket reads on cream too), then the hard offset shadow. */
+    --ticket-outline:
+      drop-shadow(1px 0 0 var(--char)) drop-shadow(-1px 0 0 var(--char)) drop-shadow(0 1px 0 var(--char))
+      drop-shadow(0 -1px 0 var(--char));
+    filter: var(--ticket-outline) drop-shadow(8px 8px 0 var(--ticket-shadow));
+    transition:
+      translate var(--dur-hover) var(--ease-card),
+      filter var(--dur-hover) var(--ease-card);
+  }
+
+  .batch-ticket--interactive {
+    cursor: pointer;
+  }
+
+  .batch-ticket--interactive:hover,
+  .batch-ticket--selected {
+    translate: -2px -2px;
+    filter: var(--ticket-outline) drop-shadow(10px 10px 0 var(--ticket-shadow));
+  }
+
+  .batch-ticket--selected {
+    --ticket-shadow: var(--cherry);
+  }
+
+  .batch-ticket__paper {
+    position: relative;
+    border-radius: 6px;
+    background: var(--paper);
+    padding: 24px 24px 24px calc(var(--stub) + 22px);
+    /* Punched holes down the stub edge. */
+    -webkit-mask: radial-gradient(circle 5px at 0 50%, #0000 97%, #000) 0 0 / 100% 18px repeat-y;
+    mask: radial-gradient(circle 5px at 0 50%, #0000 97%, #000) 0 0 / 100% 18px repeat-y;
+  }
+
+  /* Tear line between stub and body. */
+  .batch-ticket__paper::before {
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: var(--stub);
+    border-left: 1.5px dashed rgb(90 84 75 / 0.55);
+    content: '';
+  }
+
+  .batch-ticket__label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mut);
+  }
+
+  .batch-ticket__code {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .batch-ticket--full .batch-ticket__code {
+    margin-top: 10px;
+    font-size: clamp(1.25rem, 10cqi, 2.4rem);
+    white-space: nowrap;
+  }
+
+  .batch-ticket__meta {
+    margin-top: 10px;
+    font-size: 0.875rem;
+    color: var(--ink-mut);
+  }
+
+  .batch-ticket__stamp {
+    display: inline-block;
+    flex-shrink: 0;
+    rotate: -4deg;
+    border: 2px solid var(--cherry);
+    border-radius: 4px;
+    padding: 4px 8px 3px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--cherry);
+  }
+
+  /* Very narrow tickets: let the stamp break onto two lines instead of running off the paper. */
+  @container (max-width: 260px) {
+    .batch-ticket__stamp {
+      max-width: 100%;
+      white-space: normal;
+    }
+  }
+
+  .batch-ticket__notes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 18px;
+  }
+
+  .batch-ticket__notes li {
+    border: 1px solid rgb(27 23 20 / 0.28);
+    border-radius: 9999px;
+    padding: 4px 11px;
+    font-size: 0.8125rem;
+  }
+
+  /* Full tickets fill their grid row and pin the counter to the bottom, so meters line up. */
+  .batch-ticket--full,
+  .batch-ticket--full .batch-ticket__paper {
+    height: 100%;
+  }
+
+  .batch-ticket--full .batch-ticket__paper {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .batch-ticket__counter {
+    margin-top: auto;
+    padding-top: 22px;
+  }
+
+  .batch-ticket__stock {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .batch-ticket__meter {
+    display: block;
+    height: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgb(27 23 20 / 0.14);
+  }
+
+  .batch-ticket__meter > span {
+    display: block;
+    height: 100%;
+    background: var(--char);
+  }
+
+  .batch-ticket__action {
+    margin-top: 24px;
+  }
+
+  /* Strip: one line on desktop, wraps on small screens. */
+  .batch-ticket--strip .batch-ticket__paper {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 20px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    padding-right: 12px;
+  }
+
+  .batch-ticket--strip .batch-ticket__code {
+    font-size: 1.125rem;
+  }
+
+  .batch-ticket--strip .batch-ticket__meta,
+  .batch-ticket--strip .batch-ticket__action {
+    margin-top: 0;
+  }
+
+  .batch-ticket--strip .batch-ticket__action {
+    margin-left: auto;
+  }
+
+  /* Sold out: kept legible (no opacity fade), stamp and counter say why. */
+  .batch-ticket--sold-out .batch-ticket__code {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
+
+  .batch-ticket--sold-out .batch-ticket__meter > span {
+    background: transparent;
+  }
+}
+
+/* ---- Redesign primitives (BRIEF §3). Techniques re-created, nothing taken from the reference. ---- */
+@layer components {
+  /* Lenis owns smoothing while it runs; native smooth scroll would fight it. */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
+  html.lenis {
+    scroll-behavior: auto;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: clip;
+  }
+
+  .lenis.lenis-smooth iframe {
+    pointer-events: none;
+  }
+
+  /* SplitReveal: readable by default, hidden only once JS arms it. */
+  .sr-mask {
+    display: inline-block;
+    overflow: hidden;
+    /* Room for descenders so the mask doesn't crop g, p, y. */
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
+    vertical-align: bottom;
+  }
+
+  .sr-word {
+    display: inline-block;
+    transition: transform var(--dur-reveal) var(--ease-text);
+    transition-delay: calc(var(--sr-delay, 0s) + var(--i, 0) * var(--stagger-word));
+  }
+
+  [data-reveal='armed'] .sr-word {
+    transform: translateY(110%);
+  }
+
+  /* Wiggle: uses `rotate`, so it composes with the reveal's transform. */
+  .sw-wiggle {
+    display: inline-block;
+    transform-origin: 50% 60%;
+    animation: sw-wiggle 1.1s ease-in-out infinite alternate;
+  }
+
+  @keyframes sw-wiggle {
+    from {
+      rotate: 2deg;
+    }
+    to {
+      rotate: -2deg;
+    }
+  }
+
+  /* InkButton */
+  .ink-btn {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 9999px;
+    padding: 0 28px;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: scale 120ms ease-out;
+  }
+
+  .ink-btn:active {
+    scale: 0.975;
+  }
+
+  .ink-btn:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
+
+  .ink-btn__fill {
+    position: absolute;
+    inset: -1px; /* past the rounded edge, so no base-colour rim shows through anti-aliasing */
+    z-index: -1;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 350ms var(--ease-text);
+  }
+
+  .ink-btn__label {
+    transition: color var(--dur-hover) ease-out;
+  }
+
+  .ink-btn:hover .ink-btn__fill,
+  .ink-btn:focus-visible .ink-btn__fill {
+    clip-path: inset(0);
+  }
+
+  .ink-btn--paper {
+    background: var(--paper);
+    color: var(--char);
+  }
+
+  .ink-btn--paper .ink-btn__fill {
+    background: var(--cherry);
+  }
+
+  .ink-btn--paper:hover .ink-btn__label,
+  .ink-btn--paper:focus-visible .ink-btn__label {
+    color: var(--paper);
+  }
+
+  .ink-btn--cherry {
+    background: var(--cherry);
+    color: var(--paper);
+  }
+
+  .ink-btn--cherry .ink-btn__fill {
+    background: var(--char);
+  }
+
+  /* PaperEdge: sits on the band's edge and overlaps it by 1px to hide seams. */
+  .paper-edge {
+    display: block;
+    width: 100%;
+    height: clamp(18px, 2.4vw, 36px);
+    color: var(--paper);
+  }
+
+  .paper-edge--top {
+    margin-bottom: -1px;
+  }
+
+  .paper-edge--bottom {
+    margin-top: -1px;
+    scale: 1 -1;
+  }
+
+  /* CursorDot */
+  /* Difference blend: reads on both dark and cream bands without a second colour. */
+  .cursor-dot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 80;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: difference;
+    transition: opacity 250ms ease-out;
+  }
+
+  .cursor-dot[data-visible='true'] {
+    opacity: 1;
+  }
+
+  /* The ring sits over button fills (cherry or char on hover); blending there would tint it off-palette. */
+  .cursor-dot[data-active='true'] {
+    mix-blend-mode: normal;
+  }
+
+  .cursor-dot__disc {
+    display: block;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border: 1.5px solid var(--paper);
+    border-radius: 9999px;
+    background: var(--paper);
+    transition:
+      scale var(--dur-hover) var(--ease-text),
+      background-color var(--dur-hover) ease-out;
+  }
+
+  /* Over links and buttons: grow into a ring so the label underneath stays readable. */
+  .cursor-dot[data-active='true'] .cursor-dot__disc {
+    scale: 2.6;
+    border-width: 0.6px;
+    background-color: transparent;
+  }
+
+  /* Grain */
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
 @layer utilities {
   .hero-title {
     letter-spacing: -0.04em;
@@ -215,6 +608,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Final states, not frozen mid-animation (BRIEF §0.5). */
+  .sw-wiggle {
+    animation: none;
+    rotate: 0deg;
+  }
+
+  .sr-word {
+    transform: none !important;
+  }
+
   *,
   *::before,
   *::after {

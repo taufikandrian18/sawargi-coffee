@@ -17,8 +17,8 @@ export const copy = {
     buyNow: 'Buy Now'
   },
   hero: {
-    // BRIEF §9 D1: "Quitely" is probably a typo for "Quietly". Kept verbatim until Taufik decides.
-    line1: { thin: 'Quitely', bold: 'Roasted' },
+    // BRIEF §9 D1: was "Quitely" (typo); Taufik approved "Quietly" on 29 Sep 2026.
+    line1: { thin: 'Quietly', bold: 'Roasted' },
     line2: { thin: 'Never', bold: 'Rushed' }
   },
   story: {

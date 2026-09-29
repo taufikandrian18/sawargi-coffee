@@ -35,7 +35,7 @@ describe('cinematic hero foreground', () => {
     const quietlyWord = screen.getByTestId('hero-word-quietly')
     const neverWord = screen.getByTestId('hero-word-never')
 
-    expect(quietlyWord).toHaveTextContent('Quitely Roasted')
+    expect(quietlyWord).toHaveTextContent('Quietly Roasted')
     expect(quietlyWord).toHaveAttribute('data-parallax-object', 'hero-word')
     expect(quietlyWord).toHaveAttribute('data-scroll-exit', 'left')
     expect(quietlyWord).toHaveClass('top-[40%]')

@@ -11,7 +11,7 @@ const LOCKED_COPY = [
   'order',
   'journal',
   'Buy Now',
-  'Quitely',
+  'Quietly',
   'Roasted',
   'Never',
   'Rushed',
