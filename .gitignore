@@ -12,3 +12,6 @@ work/
 public/media/generated-video-hls/
 public/media/coffee-bean-hls/
 public/media/coffee-bean-cinematic.mp4
+
+# Session copy of design-skills/ made by the CLAUDE.md setup step
+.claude/skills/
