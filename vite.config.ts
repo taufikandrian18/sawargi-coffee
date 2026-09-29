@@ -57,6 +57,8 @@ export default defineConfig({
   plugins: [react(), hlsMimeHeaders()],
   test: {
     environment: 'jsdom',
+    // Tests always use the sample catalogue, even when the shell (e.g. deploy/build-site.sh) points at a live store.
+    env: { VITE_WC_URL: '' },
     setupFiles: './src/test/setup.ts',
     globals: true,
     css: true

@@ -27,7 +27,7 @@ services:
       - wordpress
 
   wordpress:
-    image: wordpress:6-php8.3-fpm
+    image: wordpress:php8.3-fpm   # current WordPress; WooCommerce requires recent WP majors
     restart: unless-stopped
     # The image installs WordPress into its working directory on first start.
     working_dir: /srv/wp${BASE_PATH}/shop
