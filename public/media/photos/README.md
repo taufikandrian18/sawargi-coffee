@@ -4,14 +4,16 @@ The redesign uses no stock or borrowed photography (BRIEF G4). **Only use photos
 has a licence for.** Anything committed to git stays in its history, so check rights before
 adding a file, not after.
 
-| Slot | Used in | File | Current source |
-| --- | --- | --- | --- |
-| Cupping / harvest | Process step 01 ("Cupped, Scored, Then Released") | `../stills/step-1.webp` | Frame from Sawargi's scrub video (placeholder until an owned photo exists) |
-| Roasting / packing | Process step 02 ("Care Starts Before the Cup") | `../stills/step-2.webp` | Frame from Sawargi's scrub video (placeholder until an owned photo exists) |
-| Sawargi bag | Process step 03 ("Freshness You Can Audit") | `../stills/step-3.webp` | Supplied by Taufik, 29 Sep 2026 |
+Process steps run in the real order of the work (BRIEF §9 D9):
 
-Spec: 4:5, up to 800×1000, WebP ≤ 150 KB. Keep the subject centred: the frame's rounded,
-lopsided corners crop the edges.
+| Step | Copy | File | Photo | Source |
+| --- | --- | --- | --- | --- |
+| 01 | Care Starts Before the Cup | `../stills/step-1.webp` | Cherries in harvest baskets (cropped: no picker or hut, because Sawargi has no farm affiliation) | Taufik's own AI image, from his own prompt |
+| 02 | Cupped, Scored, Then Released | `../stills/step-2.webp` | Hand pan-roasting over a fire (the utensils match Sawargi's) | Taufik's own AI image, from his own prompt |
+| 03 | Freshness You Can Audit | `../stills/step-3.webp` | A hand holding the Sawargi bag | Taufik's own AI image, from his own prompt |
 
-Step 02's copy is about sanitized equipment, sealed packaging and a facility standard, so its
-photo should show that (clean equipment, sealing, packing), not a process Sawargi doesn't use.
+Spec: 4:5, up to 800×1000, WebP ≤ 150 KB. Keep the subject centred: the frame's rounded corners
+and vignette darken the edges.
+
+If a photo changes, check its step's copy in `src/content/copy.ts` still describes it, and never
+let a photo imply a fact that isn't true (a farm, a facility, a certification).

@@ -93,48 +93,53 @@
     border-color: rgb(252 165 165 / 0.8);
   }
 
-  /* Long-form journal typography */
+  /* Long-form journal typography: cream reading surface (BRIEF §7). */
   .journal-prose > * + * {
-    margin-top: 1.25rem;
+    margin-top: 1.4rem;
   }
 
   .journal-prose h2 {
-    margin-top: 3.5rem;
-    font-size: clamp(1.6rem, 3vw, 2.25rem);
-    font-weight: 300;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-    color: #fff;
+    margin-top: 4rem;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 0.95;
+    text-transform: uppercase;
+    color: var(--char);
   }
 
   .journal-prose p,
   .journal-prose li {
-    font-size: 1.0625rem;
-    line-height: 1.85;
-    color: rgb(255 255 255 / 0.8);
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: var(--char);
   }
 
   .journal-prose strong {
-    font-weight: 500;
-    color: #fff;
+    font-weight: 600;
+    color: var(--char);
   }
 
   .journal-prose a {
-    color: #fff;
+    color: var(--char);
     text-decoration: underline;
-    text-decoration-color: rgb(255 255 255 / 0.35);
+    text-decoration-color: rgb(179 63 45 / 0.5);
     text-underline-offset: 3px;
   }
 
   .journal-prose a:hover {
-    text-decoration-color: #fff;
+    text-decoration-color: var(--cherry);
   }
 
+  /* Source markers in Plex, cherry: 4.61:1 on paper. */
   .journal-prose sup a {
-    text-decoration: none;
-    color: rgb(255 255 255 / 0.55);
-    font-size: 0.7em;
     padding-left: 1px;
+    font-family: var(--font-mono);
+    font-size: 0.7em;
+    font-weight: 500;
+    color: var(--cherry);
+    text-decoration: none;
   }
 
   .journal-prose ul {
@@ -142,17 +147,29 @@
     padding-left: 1.25rem;
   }
 
+  .journal-prose ul > li::marker {
+    color: var(--cherry);
+  }
+
   .journal-prose ul > li + li {
     margin-top: 0.5rem;
   }
 
   .journal-prose blockquote {
-    border-left: 1px solid rgb(255 255 255 / 0.4);
-    padding-left: 1.25rem;
-    font-size: 1.35rem;
-    font-weight: 300;
-    line-height: 1.5;
-    color: #fff;
+    border-left: 3px solid var(--cherry);
+    padding-left: 1.5rem;
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.4vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--char);
+  }
+
+  .journal-prose :focus-visible,
+  .journal-surface a:focus-visible {
+    outline: 2px solid var(--char);
+    outline-offset: 3px;
   }
 }
 
@@ -431,6 +448,11 @@
 
   .ink-btn:active {
     scale: 0.975;
+  }
+
+  .ink-btn:disabled {
+    cursor: wait;
+    opacity: 0.6;
   }
 
   .ink-btn:focus-visible {
@@ -724,15 +746,21 @@
     overflow: hidden;
     border-radius: 2rem;
     background: var(--panel);
-    box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+    /* Hairline and a wide, soft glow instead of a hard drop shadow, so the frame sits in the scene. */
+    box-shadow:
+      0 0 0 1px rgb(236 230 218 / 0.08),
+      0 40px 120px -20px rgb(0 0 0 / 0.7);
   }
 
+  /* Vignette: edges melt toward the page ink, the bottom darkens for the chip. */
   .process-frame::after {
     position: absolute;
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background: linear-gradient(180deg, rgb(0 0 0 / 0.3) 0%, transparent 35%, transparent 60%, rgb(0 0 0 / 0.55) 100%);
+    background:
+      radial-gradient(120% 90% at 50% 45%, transparent 55%, rgb(12 10 8 / 0.55) 100%),
+      linear-gradient(180deg, rgb(12 10 8 / 0.25) 0%, transparent 30%, transparent 62%, rgb(12 10 8 / 0.6) 100%);
     content: '';
   }
 
@@ -912,6 +940,42 @@
   }
 }
 
+/* ---- Loader: a roast stamp counting up (BRIEF §7). ---- */
+@layer components {
+  .video-loader__stamp {
+    display: inline-block;
+    rotate: -4deg;
+    border: 3px solid var(--cherry);
+    border-radius: 6px;
+    padding: 10px 18px 8px;
+    font-family: var(--font-mono);
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+    color: var(--cherry);
+    /* Cherry on ink is 3.45:1; this is large text (≥ 24px bold-ish), so it clears the 3:1 bar. */
+  }
+}
+
+/* ---- Checkout (BRIEF §7). ---- */
+@layer components {
+  .summary-card {
+    border-radius: var(--radius-card);
+    background: var(--paper);
+    padding: 28px;
+    color: var(--char);
+    filter: drop-shadow(8px 8px 0 var(--cherry));
+  }
+
+  /* Keyboard focus lands on the hidden radio; show it on the ticket. */
+  .checkout-ticket:focus-within {
+    outline: 2px solid var(--paper);
+    outline-offset: 6px;
+  }
+}
+
 /* ---- Step 5 motion: marquee, pinned story rail, sticky process (BRIEF §3). ---- */
 @layer components {
   /* Marquee */
@@ -1064,6 +1128,11 @@
     transition: opacity 450ms var(--ease-text);
   }
 
+  /* Room after the last step so the sticky frame stays put while step 03 is read. */
+  .chapter-process[data-layout='sticky'] .process-steps {
+    padding-bottom: 22svh;
+  }
+
   .chapter-process[data-layout='sticky'] .process-step[data-status='active'] {
     opacity: 1;
   }
@@ -1079,7 +1148,7 @@
   }
 
   .process-frame--sticky {
-    max-width: min(520px, 38vw);
+    max-width: min(560px, 40vw);
   }
 
   /* Cross-fade with a slow settle-in zoom as each step becomes active. */

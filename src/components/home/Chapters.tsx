@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { copy } from '../../content/copy'
 import type { Batch } from '../../data/shop'
 import { BATCHES, formatRoastDate } from '../../data/shop'
+import { checkoutHref } from '../../lib/batchLink'
 import { Link } from '../../lib/router'
 import { useMediaQuery } from '../../lib/useMediaQuery'
 import { ARTICLE } from '../../pages/JournalPage'
@@ -169,9 +170,10 @@ export function OneChapter() {
   )
 }
 
+// Real order of the work (BRIEF §9 D9): cherry → roast and cup → the bag.
 const PROCESS_STEPS = [
-  { key: 'process', still: '/media/stills/step-1.webp' },
-  { key: 'clean', still: '/media/stills/step-2.webp' },
+  { key: 'clean', still: '/media/stills/step-1.webp' },
+  { key: 'process', still: '/media/stills/step-2.webp' },
   { key: 'proof', still: '/media/stills/step-3.webp' }
 ] as const
 
@@ -285,16 +287,20 @@ export function BatchChapter({ current }: { current?: Batch }) {
         <p className="mt-10 max-w-2xl text-lg leading-8">{copy.scarcity.p1}</p>
         <div className="batch-grid mt-14 md:mt-20">
           {BATCHES.map((batch) => (
-            <BatchTicket key={batch.code} batch={batch} selected={batch.code === current?.code} />
+            <BatchTicket
+              key={batch.code}
+              batch={batch}
+              selected={batch.code === current?.code}
+              action={
+                batch.bagsLeft > 0 ? (
+                  <InkButton href={checkoutHref(batch)} variant="cherry">
+                    {copy.cta.button}
+                  </InkButton>
+                ) : undefined
+              }
+            />
           ))}
         </div>
-        {current && (
-          <div className="mt-14">
-            <InkButton href="/checkout" variant="cherry">
-              {copy.cta.button}
-            </InkButton>
-          </div>
-        )}
       </section>
     </CreamBand>
   )
@@ -329,7 +335,7 @@ export function ClimaxCta({ batch }: { batch?: Batch }) {
       <SplitReveal text={copy.cta.title} className="display-climax readable-heading mt-6" />
       <p className="on-video mx-auto mt-10 max-w-3xl text-lg leading-8">{copy.cta.p1}</p>
       <div className="mt-12">
-        <InkButton href="/checkout" variant="cherry">
+        <InkButton href={batch ? checkoutHref(batch) : '/checkout'} variant="cherry">
           {copy.cta.button}
         </InkButton>
       </div>

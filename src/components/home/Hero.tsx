@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { copy } from '../../content/copy'
 import type { Batch } from '../../data/shop'
 import { BatchTicket } from '../BatchTicket'
+import { checkoutHref } from '../../lib/batchLink'
 import { BeanDrift } from '../ui/BeanDrift'
 import { InkButton } from '../ui/InkButton'
 import { prefersReducedMotion } from '../ui/motion'
@@ -96,7 +97,7 @@ export function Hero({ batch }: { batch?: Batch }) {
               batch={batch}
               variant="strip"
               action={
-                <InkButton href="/checkout" variant="cherry">
+                <InkButton href={checkoutHref(batch)} variant="cherry">
                   {copy.cta.button}
                 </InkButton>
               }

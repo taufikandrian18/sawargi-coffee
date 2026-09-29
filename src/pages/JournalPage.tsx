@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react'
 import { SiteHeader } from '../components/SiteHeader'
+import { InkButton } from '../components/ui/InkButton'
 import { Link } from '../lib/router'
 
 type Reference = { id: number; text: string; href: string }
@@ -87,30 +89,30 @@ export const ARTICLE = {
 
 export function JournalIndexPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="journal-surface min-h-screen bg-paper text-char">
       <SiteHeader current="journal" />
       <main className="mx-auto max-w-5xl px-4 py-16 md:px-8 md:py-24">
-        <p className="text-xs font-medium uppercase tracking-[0.32em] text-white/60">journal</p>
-        <h1 className="mt-4 text-[clamp(3rem,8vw,6rem)] font-light leading-[0.95] tracking-[-0.04em]">
+        <p className="text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-ink-mut">journal</p>
+        <h1 className="display-chapter mt-4">
           Notes from one coffee
         </h1>
-        <p className="mt-6 max-w-xl text-white/70">
+        <p className="mt-6 max-w-xl text-lg leading-8 text-ink-mut">
           We only roast one coffee, so we can afford to know it properly. This is where we write
           down what we learn — with sources.
         </p>
 
         <Link
           to={`/journal/${ARTICLE.slug}`}
-          className="group mt-14 block border-t border-white/20 py-10 transition-colors hover:border-white/60"
+          className="group mt-14 block border-t border-char/20 py-10 transition-colors hover:border-char"
         >
-          <p className="text-xs uppercase tracking-[0.28em] text-white/50">
+          <p className="font-plex text-[0.8125rem] uppercase tracking-[0.08em] text-ink-mut">
             {ARTICLE.date} · {ARTICLE.readingTime}
           </p>
-          <h2 className="mt-4 text-[clamp(2rem,5vw,3.5rem)] font-light leading-none tracking-[-0.04em]">
+          <h2 className="display-step mt-4">
             {ARTICLE.title}
           </h2>
-          <p className="mt-4 max-w-2xl text-lg text-white/70">{ARTICLE.subtitle}</p>
-          <span className="mt-6 inline-block text-sm text-white/60 transition-colors group-hover:text-white">
+          <p className="mt-4 max-w-2xl text-lg text-ink-mut">{ARTICLE.subtitle}</p>
+          <span className="mt-6 inline-block text-sm font-medium uppercase tracking-[0.22em] text-cherry transition-colors group-hover:text-char">
             Read the article →
           </span>
         </Link>
@@ -121,26 +123,26 @@ export function JournalIndexPage() {
 
 export function JournalArticlePage() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="journal-surface min-h-screen bg-paper text-char">
       <SiteHeader current="journal" />
       <article className="mx-auto max-w-3xl px-4 py-16 md:px-8 md:py-24">
         <header>
-          <p className="text-xs font-medium uppercase tracking-[0.32em] text-white/60">
-            <Link to="/journal" className="hover:text-white">
+          <p className="text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-ink-mut">
+            <Link to="/journal" className="underline decoration-cherry/50 underline-offset-4 hover:text-char">
               journal
             </Link>{' '}
             · origin & process
           </p>
-          <h1 className="mt-5 text-[clamp(3rem,9vw,6.5rem)] font-light leading-[0.92] tracking-[-0.045em]">
+          <h1 className="display-chapter mt-5">
             {ARTICLE.title}
           </h1>
-          <p className="mt-6 text-xl font-light leading-8 text-white/80">{ARTICLE.subtitle}</p>
-          <p className="mt-6 text-sm text-white/50">
+          <p className="mt-6 text-xl leading-8 text-char">{ARTICLE.subtitle}</p>
+          <p className="mt-6 font-plex text-sm text-ink-mut">
             Sawargi · {ARTICLE.date} · {ARTICLE.readingTime}
           </p>
         </header>
 
-        <div className="journal-prose mt-14 border-t border-white/15 pt-12">
+        <div className="journal-prose mt-14 border-t border-char/15 pt-12">
           <p>
             On its own mountain, our coffee is the exception. The Slow Food Foundation’s record of
             Ciwidey arabica says it plainly: most coffee from Ciwidey is{' '}
@@ -300,28 +302,27 @@ export function JournalArticlePage() {
           </p>
         </div>
 
-        <div className="mt-16 rounded-3xl border border-white/15 bg-white/[0.03] p-8 text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-white/55">the coffee in this article</p>
-          <p className="mt-3 text-2xl font-light">Ciwidey Natural · 1 kg</p>
-          <Link
-            to="/checkout"
-            className="mt-6 inline-flex rounded-full bg-white px-8 py-3.5 text-sm text-black hover:bg-neutral-200"
-          >
-            Choose a batch
-          </Link>
+        <div className="mt-16 rounded-[2rem] bg-char p-8 text-center text-paper md:p-10" style={{ '--focus-ring': 'var(--paper)' } as CSSProperties}>
+          <p className="text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-paper-mut">the coffee in this article</p>
+          <p className="display-step mt-3">Ciwidey Natural · 1 kg</p>
+          <div className="mt-8">
+            <InkButton href="/checkout" variant="cherry">
+              Choose a batch
+            </InkButton>
+          </div>
         </div>
 
-        <section aria-label="sources" className="mt-16 border-t border-white/15 pt-10">
-          <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-white/60">Sources</h2>
-          <ol className="mt-6 space-y-3 text-sm leading-6 text-white/65">
+        <section aria-label="sources" className="mt-16 border-t border-char/15 pt-10">
+          <h2 className="text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-ink-mut">Sources</h2>
+          <ol className="mt-6 space-y-3 text-sm leading-6 text-char">
             {REFERENCES.map((ref) => (
               <li key={ref.id} id={`ref-${ref.id}`} className="scroll-mt-28">
-                <span className="mr-2 tabular-nums text-white/40">[{ref.id}]</span>
+                <span className="mr-2 font-plex font-medium tabular-nums text-cherry">[{ref.id}]</span>
                 <a
                   href={ref.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="underline decoration-white/25 underline-offset-2 hover:text-white hover:decoration-white"
+                  className="underline decoration-char/25 underline-offset-2 hover:decoration-cherry"
                 >
                   {ref.text}
                 </a>

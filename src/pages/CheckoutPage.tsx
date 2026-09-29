@@ -1,6 +1,8 @@
-import type { FormEvent, ReactNode } from 'react'
+import type { CSSProperties, FormEvent, ReactNode } from 'react'
 import { useMemo, useState } from 'react'
+import { BatchTicket } from '../components/BatchTicket'
 import { SiteHeader } from '../components/SiteHeader'
+import { InkButton } from '../components/ui/InkButton'
 import {
   BATCHES,
   CURRENCIES,
@@ -12,10 +14,10 @@ import {
   SHIPPING,
   calcTotals,
   formatMoney,
-  formatRoastDate,
   maxQuantityFor
 } from '../data/shop'
 import type { Batch, CurrencyCode, GrindId, PaymentId, ShippingId } from '../data/shop'
+import { initialBatchCode } from '../lib/batchLink'
 import { Link } from '../lib/router'
 
 type Contact = {
@@ -73,7 +75,7 @@ type CheckoutPageProps = {
 export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
   const firstAvailable = BATCHES.find((b) => b.bagsLeft > 0) ?? BATCHES[0]
 
-  const [batchCode, setBatchCode] = useState(firstAvailable.code)
+  const [batchCode, setBatchCode] = useState(() => initialBatchCode())
   const [grind, setGrind] = useState<GrindId>('whole')
   const [quantity, setQuantity] = useState(1)
   const [currency, setCurrency] = useState<CurrencyCode>('IDR')
@@ -134,7 +136,7 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
 
   if (status === 'done' && order) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-ink text-paper">
         <SiteHeader current="checkout" />
         <OrderConfirmation order={order} currency={currency} />
       </div>
@@ -142,7 +144,7 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-ink text-paper">
       <SiteHeader current="checkout" />
 
       <div className="border-b border-amber-200/20 bg-amber-200/[0.06] px-4 py-2.5 text-center text-xs tracking-wide text-amber-100/90">
@@ -157,33 +159,27 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
       >
         <div className="min-w-0 space-y-12">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.32em] text-white/60">
+            <p className="text-xs font-medium uppercase tracking-[0.32em] text-paper/60">
               one coffee, many batches
             </p>
-            <h1 className="mt-3 text-[clamp(2.5rem,6vw,4.5rem)] font-light leading-[0.95] tracking-[-0.04em]">
+            <h1 className="display-chapter mt-3">
               {PRODUCT.name}
             </h1>
-            <p className="mt-4 max-w-xl text-white/70">
+            <p className="mt-4 max-w-xl text-paper/70">
               {PRODUCT.origin} · {PRODUCT.process} · {PRODUCT.sizeLabel} bag ·{' '}
-              <span className="text-white">{money(PRODUCT.priceIdr)}</span>
+              <span className="text-paper">{money(PRODUCT.priceIdr)}</span>
             </p>
           </div>
 
           <Step number="01" title="Choose your batch">
-            <div role="radiogroup" aria-label="batch" className="grid gap-3">
+            <div role="radiogroup" aria-label="batch" className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {BATCHES.map((b) => {
                 const soldOut = b.bagsLeft === 0
                 const selected = b.code === batch.code
                 return (
                   <label
                     key={b.code}
-                    className={`relative block rounded-2xl border p-5 transition-colors focus-within:ring-2 focus-within:ring-white/70 ${
-                      soldOut
-                        ? 'cursor-not-allowed border-white/10 opacity-45'
-                        : selected
-                          ? 'cursor-pointer border-white bg-white/[0.06]'
-                          : 'cursor-pointer border-white/20 hover:border-white/50'
-                    }`}
+                    className={`checkout-ticket block rounded-md ${soldOut ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     <input
                       type="radio"
@@ -195,32 +191,8 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
                       onChange={() => selectBatch(b)}
                       className="sr-only"
                     />
-                    <div className="flex flex-wrap items-baseline justify-between gap-2 pr-6">
-                      <span className="font-medium tracking-wide">Batch {b.code}</span>
-                      <span className="text-sm text-white/60">
-                        {soldOut ? 'Sold out' : `${b.bagsLeft} of ${b.bagsTotal} bags left`}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-white/70">
-                      Roasted {formatRoastDate(b.roastDate)} · {b.harvest} · Cup score{' '}
-                      {b.cupScore.toFixed(1)}
-                    </p>
-                    <p className="mt-3 flex flex-wrap gap-2">
-                      {b.notes.map((note) => (
-                        <span
-                          key={note}
-                          className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/75"
-                        >
-                          {note}
-                        </span>
-                      ))}
-                    </p>
-                    {selected && !soldOut && (
-                      <span
-                        aria-hidden="true"
-                        className="absolute right-5 top-6 h-2.5 w-2.5 rounded-full bg-white"
-                      />
-                    )}
+                    {/* The ticket is the visual; the radio above carries the state for assistive tech. */}
+                    <BatchTicket batch={b} as="div" interactive={!soldOut} selected={selected && !soldOut} />
                   </label>
                 )
               })}
@@ -242,13 +214,13 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-5">
-              <span id="qty-label" className="text-sm text-white/70">
+              <span id="qty-label" className="text-sm text-paper/70">
                 Bags (1 kg each)
               </span>
               <div
                 role="group"
                 aria-labelledby="qty-label"
-                className="flex items-center rounded-full border border-white/25"
+                className="flex items-center rounded-full border border-paper/25"
               >
                 <button
                   type="button"
@@ -273,7 +245,7 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
                 </button>
               </div>
               {quantity >= maxQty && (
-                <span className="text-xs text-white/50">
+                <span className="text-xs text-paper/50">
                   {maxQty === batch.bagsLeft ? 'All remaining bags in this batch' : `Max ${maxQty} per order`}
                 </span>
               )}
@@ -358,7 +330,7 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
                 )
               })}
             </div>
-            <p className="mt-3 text-xs text-white/50">
+            <p className="mt-3 text-xs text-paper/50">
               Free regular shipping from {FREE_SHIPPING_MIN_BAGS} bags.
             </p>
           </Step>
@@ -376,23 +348,23 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
                 />
               ))}
             </div>
-            <p className="mt-3 text-xs text-white/50">
+            <p className="mt-3 text-xs text-paper/50">
               Demo mode: you'll see simulated payment instructions after placing the order.
             </p>
           </Step>
         </div>
 
         <aside aria-label="order summary" className="lg:sticky lg:top-24 lg:self-start">
-          <div className="rounded-3xl border border-white/15 bg-white/[0.03] p-6">
+          <div className="summary-card" style={{ '--focus-ring': 'var(--char)' } as CSSProperties}>
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-medium">Order summary</h2>
-              <label className="flex items-center gap-2 text-xs text-white/60">
+              <h2 className="font-display text-3xl font-extrabold uppercase leading-none">Order summary</h2>
+              <label className="flex items-center gap-2 text-xs text-ink-mut">
                 <span>Currency</span>
                 <select
                   aria-label="currency"
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
-                  className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-sm text-white"
+                  className="rounded-full border border-char/30 bg-paper px-3 py-1.5 text-sm text-char"
                 >
                   {(Object.keys(CURRENCIES) as CurrencyCode[]).map((code) => (
                     <option key={code} value={code}>
@@ -403,43 +375,37 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
               </label>
             </div>
 
-            <div className="mt-6 border-t border-white/10 pt-5 text-sm">
+            <div className="mt-6 border-t border-char/15 pt-5 text-sm">
               <p className="font-medium">
                 {PRODUCT.name} · {PRODUCT.sizeLabel}
               </p>
-              <p className="mt-1 text-white/60">
+              <p className="mt-1 font-plex text-ink-mut">
                 Batch {batch.code} · {GRINDS.find((g) => g.id === grind)?.label}
               </p>
             </div>
 
-            <dl className="mt-5 space-y-2.5 border-t border-white/10 pt-5 text-sm">
+            <dl className="mt-5 space-y-2.5 border-t border-char/15 pt-5 text-sm">
               <Row label={`${quantity} × ${money(PRODUCT.priceIdr)}`} value={money(totals.subtotal)} />
               <Row label="Shipping" value={totals.freeShipping ? 'Free' : money(totals.shipping)} />
-              <div className="flex items-baseline justify-between border-t border-white/10 pt-4 text-base">
+              <div className="flex items-baseline justify-between border-t border-char/15 pt-4 text-base">
                 <dt>Total</dt>
-                <dd data-testid="order-total" className="text-2xl font-light tabular-nums">
+                <dd data-testid="order-total" className="font-plex text-2xl font-medium tabular-nums">
                   {money(totals.total)}
                 </dd>
               </div>
             </dl>
 
             {currency !== 'IDR' && (
-              <p className="mt-3 text-xs leading-5 text-white/50">
+              <p className="mt-3 text-xs leading-5 text-ink-mut">
                 Charged in IDR: {formatMoney(totals.total, 'IDR')}. {currency} is an indicative
                 conversion (rates as of {RATES_AS_OF}).
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={status === 'processing'}
-              className="mt-6 w-full rounded-full bg-white px-6 py-4 text-sm text-black transition-colors hover:bg-neutral-200 disabled:cursor-wait disabled:opacity-60"
-            >
+            <InkButton type="submit" variant="cherry" disabled={status === 'processing'} className="mt-6 w-full">
               {status === 'processing' ? 'Processing…' : `Place order · ${money(totals.total)}`}
-            </button>
-            <p className="mt-4 text-center text-xs text-white/45">
-              Small batch. Every bag dated and numbered.
-            </p>
+            </InkButton>
+            <p className="mt-4 text-center text-xs text-ink-mut">Small batch. Every bag dated and numbered.</p>
           </div>
         </aside>
       </form>
@@ -449,9 +415,9 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
 
 function Step({ number, title, children }: { number: string; title: string; children: ReactNode }) {
   return (
-    <section aria-label={title.toLowerCase()} className="border-t border-white/15 pt-8">
-      <h2 className="mb-6 flex items-baseline gap-4 text-xl font-light">
-        <span className="text-xs tracking-[0.3em] text-white/45">{number}</span>
+    <section aria-label={title.toLowerCase()} className="border-t border-paper/15 pt-8">
+      <h2 className="mb-6 flex items-baseline gap-4 font-display text-3xl font-extrabold uppercase leading-none">
+        <span className="font-plex text-base font-medium text-cherry">{number}</span>
         {title}
       </h2>
       {children}
@@ -474,8 +440,8 @@ function ChoiceCard({
 }) {
   return (
     <label
-      className={`block cursor-pointer rounded-2xl border p-4 transition-colors focus-within:ring-2 focus-within:ring-white/70 ${
-        checked ? 'border-white bg-white/[0.06]' : 'border-white/20 hover:border-white/50'
+      className={`block cursor-pointer rounded-2xl border p-4 transition-colors focus-within:ring-2 focus-within:ring-paper/70 ${
+        checked ? 'border-paper bg-paper/[0.06]' : 'border-paper/20 hover:border-paper/50'
       }`}
     >
       <input
@@ -487,7 +453,7 @@ function ChoiceCard({
         className="sr-only"
       />
       <span className="block text-sm font-medium">{title}</span>
-      <span className="mt-1 block text-xs leading-5 text-white/55">{hint}</span>
+      <span className="mt-1 block text-xs leading-5 text-paper/55">{hint}</span>
     </label>
   )
 }
@@ -509,7 +475,7 @@ function Field({
     <div className={`checkout-field ${error ? 'has-error' : ''} ${className}`}>
       <label
         htmlFor={`field-${id}`}
-        className="mb-1.5 block text-xs uppercase tracking-[0.18em] text-white/55"
+        className="mb-1.5 block text-xs uppercase tracking-[0.18em] text-paper/55"
       >
         {label}
       </label>
@@ -526,8 +492,8 @@ function Field({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-white/65">{label}</dt>
-      <dd className="tabular-nums">{value}</dd>
+      <dt className="text-ink-mut">{label}</dt>
+      <dd className="font-plex tabular-nums">{value}</dd>
     </div>
   )
 }
@@ -536,24 +502,24 @@ function OrderConfirmation({ order, currency }: { order: PlacedOrder; currency: 
   const grindLabel = GRINDS.find((g) => g.id === order.grind)?.label ?? ''
   return (
     <main className="mx-auto max-w-3xl px-4 py-16 md:py-24">
-      <p className="text-xs font-medium uppercase tracking-[0.32em] text-white/60">
+      <p className="text-xs font-medium uppercase tracking-[0.32em] text-paper/60">
         order placed · demo
       </p>
       <h1 className="mt-4 text-[clamp(2.5rem,7vw,5rem)] font-light leading-[0.95] tracking-[-0.04em]">
         Thank you, {order.contact.name.trim().split(' ')[0]}.
       </h1>
-      <p className="mt-6 text-white/75">
-        Order <span className="text-white">{order.id}</span> · {order.quantity} × {PRODUCT.sizeLabel}{' '}
+      <p className="mt-6 text-paper/75">
+        Order <span className="text-paper">{order.id}</span> · {order.quantity} × {PRODUCT.sizeLabel}{' '}
         {PRODUCT.name}, batch {order.batch.code}, {grindLabel.toLowerCase()}. Total{' '}
-        <span className="text-white">{formatMoney(order.totalIdr, 'IDR')}</span>
+        <span className="text-paper">{formatMoney(order.totalIdr, 'IDR')}</span>
         {currency !== 'IDR' && <> (≈ {formatMoney(order.totalIdr, currency)})</>}.
       </p>
 
-      <div className="mt-10 rounded-3xl border border-white/15 bg-white/[0.03] p-6 md:p-8">
+      <div className="mt-10 rounded-3xl border border-paper/15 bg-paper/[0.03] p-6 md:p-8">
         <PaymentInstructions order={order} />
       </div>
 
-      <p className="mt-8 text-sm text-white/55">
+      <p className="mt-8 text-sm text-paper/55">
         In the live shop, a confirmation would go to {order.contact.email} and WhatsApp{' '}
         {order.contact.phone}. This demo stores nothing.
       </p>
@@ -564,7 +530,7 @@ function OrderConfirmation({ order, currency }: { order: PlacedOrder; currency: 
         </Link>
         <Link
           to="/journal/ciwidey-natural"
-          className="rounded-full border border-white/30 px-8 py-3.5 text-sm hover:border-white"
+          className="rounded-full border border-paper/30 px-8 py-3.5 text-sm hover:border-white"
         >
           Read about this coffee
         </Link>
@@ -581,7 +547,7 @@ function PaymentInstructions({ order }: { order: PlacedOrder }) {
         <DemoQr seed={order.id} />
         <div>
           <h2 className="text-lg font-medium">Scan with any QRIS app</h2>
-          <p className="mt-2 text-sm text-white/65">
+          <p className="mt-2 text-sm text-paper/65">
             Demo QR — scanning it does nothing. Amount {amount}.
           </p>
         </div>
@@ -593,7 +559,7 @@ function PaymentInstructions({ order }: { order: PlacedOrder }) {
       <div>
         <h2 className="text-lg font-medium">Transfer to BCA virtual account</h2>
         <p className="mt-4 font-mono text-2xl tracking-wider">8277 0000 0000 0000</p>
-        <p className="mt-3 text-sm text-white/65">
+        <p className="mt-3 text-sm text-paper/65">
           Demo number — do not transfer. Amount {amount}.
         </p>
       </div>
@@ -602,7 +568,7 @@ function PaymentInstructions({ order }: { order: PlacedOrder }) {
   return (
     <div>
       <h2 className="text-lg font-medium">Card payment (simulated)</h2>
-      <p className="mt-2 text-sm text-white/65">
+      <p className="mt-2 text-sm text-paper/65">
         In the live shop you'd be sent to the payment gateway's secure card page for {amount}. No
         card details are collected on this site.
       </p>

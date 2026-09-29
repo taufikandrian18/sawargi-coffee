@@ -336,11 +336,12 @@ can't drift from them.
 | one.p1 | Most coffee brands spread thin across a dozen blends, hoping one sticks. We never had that luxury, so mastering one coffee became the standard we kept on purpose. |
 | one.pull | Every harvest. Every roast. Every bag. Held to the same standard - refined, never replaced. |
 | process.eyebrow / title | tasted before it's trusted / Cupped, Scored, Then Released |
-| process.p1 | Before any batch leaves our roastery, it's cupped and scored against our own benchmark: body, acidity, sweetness, finish. If it misses the profile, it doesn't ship. |
+| process.p1 | We roast by hand in a small pan, a little at a time, and never hurry the heat. Then every roast is cupped and scored against our own benchmark: body, acidity, sweetness, finish. If it misses the profile, it doesn't ship. *(§9 D9)* |
 | process.pull | Every batch cupped. Every batch scored. Every batch dated. |
 | clean.eyebrow / title | clean hands, careful process / Care Starts Before the Cup |
-| clean.p1 | From drying to packing, our process runs on one rule: nothing touches your coffee that wouldn't touch our own cup. Sanitized equipment, sealed packaging, and a facility standard we don't negotiate on. |
+| clean.p1 | It starts at the cherry. Ciwidey Natural dries whole, fruit still on the bean, and from drying to packing our rule doesn't change: nothing touches your coffee that wouldn't touch our own cup. *(§9 D9)* |
 | proof.eyebrow / title | proof, not promises / Freshness You Can Audit |
+| proof.p1 | Everything we just told you is printed on the bag in your hand. *(§9 D9, added)* |
 | proof.items | Roast date printed on every bag · Batch number for full traceability · One-way valve packaging to lock in aroma *(4th item cut, see §9 D2)* |
 | scarcity.eyebrow / title | the scarcity angle / No New Flavor to Hide Behind |
 | scarcity.p1 | We don't launch a new flavor every season. When this batch sells out, the next one waits for proof, not a deadline. |
@@ -466,6 +467,8 @@ Rules for the flow:
 | D6 | Add a script or hand-drawn accent font like the reference's? my-design-taste caps it at 2 families plus a utility face. | No script font; wiggle the display face instead |
 | D7 | The price is Rp150.000 per 1 kg, likely below green-bean cost (see earlier analysis). | Leave `src/data/shop.ts` untouched |
 | D8 | Deploy target (Vercel, Netlify, other)? `/checkout` and `/journal` need a rewrite to `index.html`. | Add both `vercel.json` and `public/_redirects` |
+
+| D9 | Process narration vs photos | **Decided 29 Sep 2026:** Taufik asked for the process copy to match the new photos. Steps now run in real order: 01 Care Starts Before the Cup (cherries), 02 Cupped, Scored, Then Released (hand pan roast), 03 Freshness You Can Audit (bag). `clean.p1` and `process.p1` rewritten and `proof.p1` added, using only established facts (natural process from `shop.ts`, pan roasting confirmed by Taufik). The "facility standard" claim was dropped because it contradicts the pan-roast photo. Sawargi has no farm affiliation, so the farm photo is cropped to the cherry baskets. |
 
 ### Gaps Claude (cloud) must close itself
 

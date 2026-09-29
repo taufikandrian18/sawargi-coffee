@@ -63,6 +63,7 @@ vi.mock('../lib/smoothScroll', () => ({ isSmoothScrollActive: () => smoothScroll
 import {
   CinematicVideo,
   END_SEEK_PADDING_SECONDS,
+  LOADER_TIMEOUT_MS,
   SCRUB_SMOOTHING,
   SCRUB_SMOOTHING_WITH_LENIS,
   pickVideoSource
@@ -150,6 +151,24 @@ describe('CinematicVideo', () => {
     expect(video.className).toContain('custom-video')
     expect(window.HTMLMediaElement.prototype.play).not.toHaveBeenCalled()
     expect(screen.getByText('loading... 0%')).toBeInTheDocument()
+  })
+
+  it('steps the loader aside if the video errors, so the site is never stuck behind it', () => {
+    render(<CinematicVideo src="/clip.mp4" />)
+    expect(screen.getByText('loading... 0%')).toBeInTheDocument()
+
+    fireEvent.error(getVideo())
+    expect(screen.queryByText(/loading\.\.\./)).not.toBeInTheDocument()
+  })
+
+  it('steps the loader aside after the timeout even without canplay', () => {
+    vi.useFakeTimers()
+    render(<CinematicVideo src="/clip.mp4" />)
+    expect(screen.getByText('loading... 0%')).toBeInTheDocument()
+
+    act(() => vi.advanceTimersByTime(LOADER_TIMEOUT_MS))
+    expect(screen.queryByText(/loading\.\.\./)).not.toBeInTheDocument()
+    vi.useRealTimers()
   })
 
   it('hides the loader on canplay and primes the decoder with play then pause', async () => {

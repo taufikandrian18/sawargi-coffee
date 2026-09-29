@@ -39,17 +39,21 @@ export const copy = {
   process: {
     eyebrow: "tasted before it's trusted",
     title: 'Cupped, Scored, Then Released',
-    p1: "Before any batch leaves our roastery, it's cupped and scored against our own benchmark: body, acidity, sweetness, finish. If it misses the profile, it doesn't ship.",
+    // Narration rewritten 29 Sep 2026 at Taufik's request to match the process photos (BRIEF §9 D9).
+    p1: "We roast by hand in a small pan, a little at a time, and never hurry the heat. Then every roast is cupped and scored against our own benchmark: body, acidity, sweetness, finish. If it misses the profile, it doesn't ship.",
     pull: 'Every batch cupped. Every batch scored. Every batch dated.'
   },
   clean: {
     eyebrow: 'clean hands, careful process',
     title: 'Care Starts Before the Cup',
-    p1: "From drying to packing, our process runs on one rule: nothing touches your coffee that wouldn't touch our own cup. Sanitized equipment, sealed packaging, and a facility standard we don't negotiate on."
+    // Rewritten 29 Sep 2026 to match the cherry photo; facility claim dropped (BRIEF §9 D9).
+    p1: "It starts at the cherry. Ciwidey Natural dries whole, fruit still on the bean, and from drying to packing our rule doesn't change: nothing touches your coffee that wouldn't touch our own cup."
   },
   proof: {
     eyebrow: 'proof, not promises',
     title: 'Freshness You Can Audit',
+    // Added 29 Sep 2026 to introduce the bag photo (BRIEF §9 D9).
+    p1: 'Everything we just told you is printed on the bag in your hand.',
     // BRIEF §9 D2: "Best enjoyed within [X] days of roast" cut by Taufik on 29 Sep 2026.
     items: [
       'Roast date printed on every bag',
