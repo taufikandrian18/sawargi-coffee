@@ -1,0 +1,12 @@
+# For the VPS's front proxy (the Caddy container that owns ports 80/443, e.g. n8n-caddy-1).
+# Add inside the existing `website.taufikandrian.my.id { ... }` block of ITS Caddyfile,
+# or add the whole block if the domain isn't there yet. Then reload that Caddy:
+#   docker exec n8n-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+# It reaches this stack over the shared Docker network (PROXY_NETWORK in deploy/.env).
+
+website.taufikandrian.my.id {
+	handle /sawargi-coffee* {
+		reverse_proxy sawargi-caddy:80
+	}
+	# ...whatever this site already serves stays below, ideally inside its own `handle { }`.
+}

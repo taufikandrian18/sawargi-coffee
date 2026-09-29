@@ -44,7 +44,7 @@ you've seen a screenshot.
 | `src/pages/JournalPage.tsx` | Journal index + researched article. Evidence notes are in `docs/research/` |
 | `src/data/catalog.ts`, `src/lib/catalog.tsx` | The catalogue the site renders: sample data, or live batches/stock from WooCommerce when `VITE_WC_URL` is set |
 | `wordpress/mu-plugins/sawargi-headless.php` | WordPress plugin: batch fields in WP admin + `extensions.sawargi` on the Store API. Contract-tested by `src/data/contract.test.ts` |
-| `deploy/` | VPS stack under `website.taufikandrian.my.id/sawargi-coffee` (WordPress at `/sawargi-coffee/shop`): Caddy (127.0.0.1:8088, behind the host's nginx/Apache) + WordPress (PHP-FPM) + MariaDB via Docker Compose, plus build/bootstrap/backup scripts. Guide: `docs/cms/WORDPRESS.md` |
+| `deploy/` | VPS stack under `website.taufikandrian.my.id/sawargi-coffee` (WordPress at `/sawargi-coffee/shop`): Caddy (reached as `sawargi-caddy:80` on the front proxy's Docker network `PROXY_NETWORK`; the VPS front proxy is the `n8n-caddy-1` container) + WordPress (PHP-FPM) + MariaDB via Docker Compose, plus build/bootstrap/backup scripts. Guide: `docs/cms/WORDPRESS.md` |
 | `src/lib/basePath.ts` | `withBase`/`stripBase`/`asset`: the site can be built under a path (`SITE_BASE_PATH`). Never hard-code `/media/...` or route hrefs outside `Link`/`asset()` |
 
 ## Rules
