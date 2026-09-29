@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.npm-cache
+*.tsbuildinfo
+.DS_Store
+outputs/
+work/
+
+# Old video sources no longer referenced by the app (see docs/video-scrub.md).
+# The 4K HLS segment alone is ~58 MB; keep it out of git history.
+public/media/generated-video-hls/
+public/media/coffee-bean-hls/
+public/media/coffee-bean-cinematic.mp4

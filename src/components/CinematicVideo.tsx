@@ -1,0 +1,240 @@
+import { useEffect, useRef, useState } from 'react'
+import Hls from 'hls.js'
+import gsap from 'gsap'
+import { getElementDocumentTop, getSectionScrollProgress } from './scrollProgress'
+
+type CinematicVideoProps = {
+  src: string
+  /** Lighter file for small screens / data-saver. Falls back to `src`. */
+  smallSrc?: string
+  className?: string
+}
+
+const isHlsSource = (src: string) => /\.m3u8($|\?)/i.test(src)
+const VIDEO_SECTION_SELECTOR = '[data-video-section]'
+const SMALL_SCREEN_QUERY = '(max-width: 767px)'
+
+/** One frame at 24 fps. Seeks smaller than half a frame are skipped. */
+const FRAME_SECONDS = 1 / 24
+/** Keep the last seek a frame before the end so browsers don't fire `ended`. */
+export const END_SEEK_PADDING_SECONDS = FRAME_SECONDS
+/**
+ * Fraction of the remaining distance covered per animation frame. Lower is
+ * smoother but trails further behind the scrollbar.
+ */
+export const SCRUB_SMOOTHING = 0.18
+
+type NetworkInformationLike = { saveData?: boolean }
+
+export const pickVideoSource = (src: string, smallSrc?: string) => {
+  if (!smallSrc || typeof window === 'undefined') return src
+  const connection = (navigator as Navigator & { connection?: NetworkInformationLike }).connection
+  const small = window.matchMedia?.(SMALL_SCREEN_QUERY).matches ?? false
+  return small || connection?.saveData ? smallSrc : src
+}
+
+export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideoProps) {
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [canPlay, setCanPlay] = useState(false)
+  const [activeSrc] = useState(() => pickVideoSource(src, smallSrc))
+
+  // 1. Load the media.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    let hls: Hls | undefined
+    const sourceIsHls = isHlsSource(activeSrc)
+
+    const reportBuffered = () => {
+      if (!video.duration || Number.isNaN(video.duration)) return
+      const bufferedEnd = video.buffered.length ? video.buffered.end(video.buffered.length - 1) : 0
+      setProgress(Math.min(100, Math.round((bufferedEnd / video.duration) * 100)))
+    }
+
+    const onCanPlay = () => {
+      setCanPlay(true)
+      // Prime the decoder once (iOS Safari only paints seeked frames after a
+      // play), then hold still — scroll drives the playhead, not playback.
+      const playback = video.play()
+      if (playback && typeof playback.then === 'function') {
+        void playback.then(() => video.pause()).catch(() => undefined)
+      } else {
+        video.pause()
+      }
+    }
+
+    video.addEventListener('canplay', onCanPlay, { once: true })
+    video.addEventListener('progress', reportBuffered)
+    video.addEventListener('loadedmetadata', reportBuffered)
+
+    if (sourceIsHls && video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = activeSrc
+    } else if (sourceIsHls && Hls.isSupported()) {
+      // The clip is short: buffer all of it once and never restart loading on
+      // seek. Restarting the loader on every scroll seek caused stalls.
+      hls = new Hls({
+        maxBufferLength: 600,
+        maxMaxBufferLength: 600,
+        backBufferLength: Infinity,
+        startPosition: 0,
+        capLevelToPlayerSize: true,
+        startFragPrefetch: true
+      })
+      hls.on(Hls.Events.FRAG_BUFFERED, reportBuffered)
+      hls.loadSource(activeSrc)
+      hls.attachMedia(video)
+    } else {
+      video.src = activeSrc
+    }
+
+    return () => {
+      video.removeEventListener('canplay', onCanPlay)
+      video.removeEventListener('progress', reportBuffered)
+      video.removeEventListener('loadedmetadata', reportBuffered)
+      hls?.destroy()
+    }
+  }, [activeSrc])
+
+  // 2. Scrub the playhead with scroll, smoothed on animation frames.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    let sectionTops: number[] = []
+    let scrollProgress = 0
+    let rendered = -1
+    let rafId = 0
+
+    // Measured on load/resize only — reading layout on every scroll event
+    // forced a reflow per event and caused jank.
+    const measureSections = () => {
+      sectionTops = Array.from(document.querySelectorAll<HTMLElement>(VIDEO_SECTION_SELECTOR)).map(
+        (section) => getElementDocumentTop(section)
+      )
+    }
+
+    const readScrollProgress = () => {
+      scrollProgress = getSectionScrollProgress({
+        scrollY: window.scrollY,
+        viewportHeight: window.innerHeight,
+        documentHeight: document.documentElement.scrollHeight,
+        sectionTops
+      })
+    }
+
+    const tick = () => {
+      rafId = 0
+      const duration = video.duration
+      if (!duration || Number.isNaN(duration)) return
+
+      const goal = Math.min(Math.max(0, duration - END_SEEK_PADDING_SECONDS), scrollProgress * duration)
+      const eased = rendered < 0 ? goal : rendered + (goal - rendered) * SCRUB_SMOOTHING
+      const settled = Math.abs(goal - eased) < FRAME_SECONDS / 2
+      const next = settled ? goal : eased
+
+      // Never stack a seek on top of a pending seek; retry next frame instead.
+      if (!video.seeking) {
+        if (Math.abs(video.currentTime - next) >= FRAME_SECONDS / 2) {
+          video.currentTime = next
+        }
+        rendered = next
+      }
+
+      if (!settled || video.seeking) rafId = window.requestAnimationFrame(tick)
+    }
+
+    const schedule = () => {
+      if (!rafId) rafId = window.requestAnimationFrame(tick)
+    }
+
+    const onScroll = () => {
+      readScrollProgress()
+      schedule()
+    }
+
+    const onLayoutChange = () => {
+      measureSections()
+      onScroll()
+    }
+
+    const onMetadata = () => {
+      video.pause()
+      onLayoutChange()
+    }
+
+    measureSections()
+    readScrollProgress()
+
+    video.addEventListener('loadedmetadata', onMetadata)
+    video.addEventListener('seeked', schedule)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onLayoutChange)
+
+    // Section positions shift when fonts and images load; re-measure then.
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(onLayoutChange)
+    resizeObserver?.observe(document.body)
+
+    if (video.readyState >= 1) onMetadata()
+
+    return () => {
+      video.removeEventListener('loadedmetadata', onMetadata)
+      video.removeEventListener('seeked', schedule)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onLayoutChange)
+      resizeObserver?.disconnect()
+      if (rafId) window.cancelAnimationFrame(rafId)
+    }
+  }, [])
+
+  // 3. Subtle mouse parallax. quickTo reuses one tween per axis instead of
+  // creating a new tween on every mousemove event.
+  useEffect(() => {
+    const wrapper = wrapperRef.current
+    if (!wrapper) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+
+    const moveX = gsap.quickTo(wrapper, 'x', { duration: 1.5, ease: 'power2.out' })
+    const moveY = gsap.quickTo(wrapper, 'y', { duration: 1.5, ease: 'power2.out' })
+
+    const handleMouseMove = (event: MouseEvent) => {
+      moveX((event.clientX / window.innerWidth - 0.5) * 2 * -30)
+      moveY((event.clientY / window.innerHeight - 0.5) * 2 * -30)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      gsap.killTweensOf(wrapper)
+    }
+  }, [])
+
+  return (
+    <>
+      {!canPlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black font-sans text-2xl text-white">
+          loading... {progress}%
+        </div>
+      )}
+      <div
+        ref={wrapperRef}
+        className="fixed left-0 top-0 z-0 h-full w-full origin-center scale-[1.05] will-change-transform"
+        aria-hidden="true"
+      >
+        <video
+          ref={videoRef}
+          className={`w-full h-full object-cover scale-[1.35] ${className}`}
+          muted
+          playsInline
+          disablePictureInPicture
+          crossOrigin="anonymous"
+          preload="auto"
+        />
+      </div>
+    </>
+  )
+}
