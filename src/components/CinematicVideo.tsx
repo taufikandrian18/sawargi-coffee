@@ -24,6 +24,8 @@ export const END_SEEK_PADDING_SECONDS = FRAME_SECONDS
  * smoother but trails further behind the scrollbar.
  */
 export const SCRUB_SMOOTHING = 0.18
+/** How long the loader may cover the page before it steps aside regardless. */
+export const LOADER_TIMEOUT_MS = 8000
 /**
  * With Lenis on, scrollY is already eased, so the scrub eases less to avoid
  * trailing twice (BRIEF §3). Starting value; tune by feel on real devices.
@@ -44,6 +46,8 @@ export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideo
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const [progress, setProgress] = useState(0)
   const [canPlay, setCanPlay] = useState(false)
+  /** The loader never blocks the page for good: it also gives way on error or after a timeout. */
+  const [loaderGaveUp, setLoaderGaveUp] = useState(false)
   const [activeSrc] = useState(() => pickVideoSource(src, smallSrc))
 
   // 1. Load the media.
@@ -72,6 +76,11 @@ export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideo
       }
     }
 
+    // A browser that can't decode the file (or a stalled network) must still get the site.
+    const giveUp = () => setLoaderGaveUp(true)
+    const timeout = window.setTimeout(giveUp, LOADER_TIMEOUT_MS)
+    video.addEventListener('error', giveUp)
+
     video.addEventListener('canplay', onCanPlay, { once: true })
     video.addEventListener('progress', reportBuffered)
     video.addEventListener('loadedmetadata', reportBuffered)
@@ -97,6 +106,8 @@ export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideo
     }
 
     return () => {
+      window.clearTimeout(timeout)
+      video.removeEventListener('error', giveUp)
       video.removeEventListener('canplay', onCanPlay)
       video.removeEventListener('progress', reportBuffered)
       video.removeEventListener('loadedmetadata', reportBuffered)
@@ -222,9 +233,9 @@ export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideo
 
   return (
     <>
-      {!canPlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black font-sans text-2xl text-white">
-          loading... {progress}%
+      {!canPlay && !loaderGaveUp && (
+        <div role="status" className="video-loader fixed inset-0 z-50 flex items-center justify-center bg-ink">
+          <span className="video-loader__stamp">loading... {progress}%</span>
         </div>
       )}
       <div

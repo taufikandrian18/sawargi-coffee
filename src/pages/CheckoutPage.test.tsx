@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { initialBatchCode } from '../lib/batchLink'
 import { CheckoutPage } from './CheckoutPage'
 
 describe('checkout', () => {
@@ -7,8 +8,24 @@ describe('checkout', () => {
     render(<CheckoutPage processingDelayMs={0} />)
 
     expect(screen.getByRole('radio', { name: 'Batch SWG-CN-014' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Batch SWG-CN-012' })).toBeDisabled()
-    expect(screen.getByText('Sold out')).toBeInTheDocument()
+    const soldOut = screen.getByRole('radio', { name: 'Batch SWG-CN-012' })
+    expect(soldOut).toBeDisabled()
+    // The ticket beside the radio says why (stamp and stock line).
+    expect(within(soldOut.closest('label') as HTMLElement).getAllByText('Sold out').length).toBeGreaterThan(0)
+  })
+
+  it('preselects the batch named in ?batch= (the home page tickets link here)', () => {
+    window.history.pushState({}, '', '/checkout?batch=SWG-CN-013')
+    render(<CheckoutPage processingDelayMs={0} />)
+
+    expect(screen.getByRole('radio', { name: 'Batch SWG-CN-013' })).toBeChecked()
+    window.history.pushState({}, '', '/')
+  })
+
+  it('ignores ?batch= for sold-out or unknown batches', () => {
+    expect(initialBatchCode('?batch=SWG-CN-012')).toBe('SWG-CN-014')
+    expect(initialBatchCode('?batch=NOPE')).toBe('SWG-CN-014')
+    expect(initialBatchCode('')).toBe('SWG-CN-014')
   })
 
   it('updates the total with quantity and currency', async () => {

@@ -55,7 +55,10 @@ describe('home page', () => {
 
     const current = BATCHES.find((b) => b.bagsLeft > 0)!
     const strip = within(hero).getByRole('article', { name: `Batch ${current.code}` })
-    expect(within(strip).getByRole('link', { name: 'Order This Batch' })).toHaveAttribute('href', '/checkout')
+    expect(within(strip).getByRole('link', { name: 'Order This Batch' })).toHaveAttribute(
+      'href',
+      `/checkout?batch=${current.code}`
+    )
     expect(within(hero).getByTestId('bean-drift')).toHaveAttribute('aria-hidden', 'true')
   })
 
@@ -90,7 +93,7 @@ describe('home page', () => {
       expect(document.querySelector(link.getAttribute('href')!), link.outerHTML).not.toBeNull()
     }
     for (const link of screen.getAllByRole('link', { name: 'Order This Batch' })) {
-      expect(link).toHaveAttribute('href', '/checkout')
+      expect(link.getAttribute('href')).toMatch(/^\/checkout\?batch=SWG-CN-\d+$/)
     }
     const miniCtas = screen.getAllByRole('link', { name: 'Choose a batch' })
     expect(miniCtas).toHaveLength(3)
@@ -117,7 +120,11 @@ describe('home page', () => {
     const batchSection = screen.getByRole('region', { name: 'the scarcity angle' })
 
     for (const batch of BATCHES) {
-      expect(within(batchSection).getByRole('article', { name: `Batch ${batch.code}` })).toBeInTheDocument()
+      const ticket = within(batchSection).getByRole('article', { name: `Batch ${batch.code}` })
+      const order = within(ticket).queryByRole('link', { name: 'Order This Batch' })
+      // In-stock tickets open checkout with their own batch; sold-out ones offer nothing.
+      if (batch.bagsLeft > 0) expect(order).toHaveAttribute('href', `/checkout?batch=${batch.code}`)
+      else expect(order).toBeNull()
     }
     expect(
       within(screen.getByRole('region', { name: 'journal' })).getByRole('link', { name: /Dried in the Fruit/ })
