@@ -1,0 +1,30 @@
+/*
+ * Redesign tokens (docs/redesign/BRIEF.md §4). Defaults pending Taufik's answers in §9 (D5).
+ * One accent only: --cherry. Never Apocalypse orange (#E06D2D), no purple, no decorative gradients.
+ */
+:root {
+  --ink: #0c0a08; /* page background: warm roast black */
+  --char: #1b1714; /* dark panels, card shadow, card text */
+  --panel: #141110; /* alternate dark band */
+  --paper: #ece6da; /* cream: text on dark, card background */
+  --paper-mut: #8e877c; /* muted text on dark */
+  --ink-mut: #5a544b; /* muted text on paper */
+  --cherry: #b8412e; /* the only accent: dried coffee-cherry red */
+
+  --radius-card: 28px;
+
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 40px;
+  --space-5: 64px;
+  --space-6: 96px;
+  --space-7: 160px;
+
+  --ease-text: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-card: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-reveal: 900ms;
+  --dur-hover: 200ms;
+  --stagger-word: 60ms;
+  --stagger-card: 90ms;
+}

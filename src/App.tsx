@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { CinematicVideo } from './components/CinematicVideo'
+import { copy, navItems } from './content/copy'
 import { BATCHES, formatRoastDate } from './data/shop'
 import { Link } from './lib/router'
 
@@ -11,22 +12,7 @@ gsap.registerPlugin(ScrollTrigger)
 // All-keyframe MP4s re-encoded for scroll scrubbing (see docs/video-scrub.md).
 const videoSrc = '/media/scrub/coffee-scrub-1080.mp4'
 const videoSmallSrc = '/media/scrub/coffee-scrub-720.mp4'
-const navItems = [
-  { label: 'story', href: '#story' },
-  { label: 'one roast', href: '#why-one' },
-  { label: 'process', href: '#process' },
-  { label: 'order', href: '#order' },
-  { label: 'journal', href: '/journal' }
-]
-
 const currentBatch = BATCHES.find((batch) => batch.bagsLeft > 0)
-
-const proofItems = [
-  'Roast date printed on every bag',
-  'Batch number for full traceability',
-  'One-way valve packaging to lock in aroma',
-  'Best enjoyed within [X] days of roast'
-]
 
 function Navigation() {
   return (
@@ -78,7 +64,7 @@ function Navigation() {
         to="/checkout"
         className="rounded-full bg-white px-6 py-3 text-sm font-normal text-black transition-colors hover:bg-neutral-200"
       >
-        Buy Now
+        {copy.nav.buyNow}
       </Link>
     </nav>
   )
@@ -196,10 +182,10 @@ function App() {
             className="hero-title readable-heading absolute left-4 top-[40%] text-[clamp(3.5rem,13vw,13rem)] font-light text-white will-change-[opacity,transform,filter] md:left-10"
           >
             <span data-testid="hero-word-quietly-thin" className="hero-word-ultra-thin">
-              Quitely
+              {copy.hero.line1.thin}
             </span>{' '}
             <span data-testid="hero-word-roasted-bold" className="font-medium">
-              Roasted
+              {copy.hero.line1.bold}
             </span>
           </h1>
 
@@ -211,10 +197,10 @@ function App() {
             className="hero-title hero-word-never-offset readable-heading absolute right-2 top-[90%] whitespace-nowrap text-[clamp(3.6rem,11vw,12rem)] font-light text-white will-change-[opacity,transform,filter] md:right-10"
           >
             <span data-testid="hero-word-never-thin" className="hero-word-ultra-thin">
-              Never
+              {copy.hero.line2.thin}
             </span>{' '}
             <span data-testid="hero-word-rushed-bold" className="font-medium">
-              Rushed
+              {copy.hero.line2.bold}
             </span>
           </p>
         </div>
@@ -229,72 +215,49 @@ function App() {
         <div className="mx-auto max-w-7xl">
           <StorySection
             id="story"
-            ariaLabel="our story"
-            eyebrow="our story"
-            title="Born When the Cafes Went Quiet"
+            ariaLabel={copy.story.eyebrow}
+            eyebrow={copy.story.eyebrow}
+            title={copy.story.title}
           >
-            <p>
-              Before 2020, coffee in Bandung wasn't something you drank alone - it was something
-              you did with people. A cup outside, a bit of time, a few friends.
-            </p>
-            <p>
-              Then the streets emptied and bean prices collapsed. We had time, cheap beans, and no
-              excuse left, so we learned the process one failed cup at a time.
-            </p>
-            <p>
-              Sawargi started with that refusal to serve anything we wouldn't drink ourselves. That
-              habit is why every batch still has to earn the name.
-            </p>
+            {copy.story.paragraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
           </StorySection>
 
           <StorySection
             id="why-one"
-            ariaLabel="why just one"
-            eyebrow="why just one"
-            title="Master One Coffee Completely"
+            ariaLabel={copy.one.eyebrow}
+            eyebrow={copy.one.eyebrow}
+            title={copy.one.title}
             align="right"
           >
-            <p>
-              Most coffee brands spread thin across a dozen blends, hoping one sticks. We never had
-              that luxury, so mastering one coffee became the standard we kept on purpose.
-            </p>
-            <p className="text-xl leading-8 text-white">
-              Every harvest. Every roast. Every bag. Held to the same standard - refined, never
-              replaced.
-            </p>
+            <p>{copy.one.p1}</p>
+            <p className="text-xl leading-8 text-white">{copy.one.pull}</p>
           </StorySection>
 
           <StorySection
             id="process"
-            ariaLabel="tasted before it's trusted"
-            eyebrow="tasted before it's trusted"
-            title="Cupped, Scored, Then Released"
+            ariaLabel={copy.process.eyebrow}
+            eyebrow={copy.process.eyebrow}
+            title={copy.process.title}
           >
-            <p>
-              Before any batch leaves our roastery, it's cupped and scored against our own
-              benchmark: body, acidity, sweetness, finish. If it misses the profile, it doesn't
-              ship.
-            </p>
+            <p>{copy.process.p1}</p>
             <p className="border-l border-white/40 pl-5 text-xl leading-8 text-white">
-              Every batch cupped. Every batch scored. Every batch dated.
+              {copy.process.pull}
             </p>
           </StorySection>
 
           <StorySection
-            ariaLabel="clean hands, careful process"
-            eyebrow="clean hands, careful process"
-            title="Care Starts Before the Cup"
+            ariaLabel={copy.clean.eyebrow}
+            eyebrow={copy.clean.eyebrow}
+            title={copy.clean.title}
             align="right"
           >
-            <p>
-              From drying to packing, our process runs on one rule: nothing touches your coffee
-              that wouldn't touch our own cup. Sanitized equipment, sealed packaging, and a
-              facility standard we don't negotiate on.
-            </p>
+            <p>{copy.clean.p1}</p>
           </StorySection>
 
           <section
-            aria-label="proof, not promises"
+            aria-label={copy.proof.eyebrow}
             data-video-section
             data-section-panel="content"
             className="content-readability flex min-h-[100svh] items-center border-t border-white/20 py-14 md:py-16"
@@ -302,14 +265,14 @@ function App() {
             <div className="grid gap-10 md:grid-cols-[0.85fr_1.15fr] md:items-start">
               <div>
                 <p className="readable-kicker text-xs font-medium uppercase tracking-[0.32em] text-white/75">
-                  proof, not promises
+                  {copy.proof.eyebrow}
                 </p>
                 <h2 className="readable-heading mt-4 max-w-3xl text-4xl font-light tracking-[-0.04em] text-white md:text-6xl">
-                  Freshness You Can Audit
+                  {copy.proof.title}
                 </h2>
               </div>
               <ul className="grid gap-px overflow-hidden rounded-sm border border-white/25 bg-white/20 shadow-[0_24px_90px_rgb(0_0_0_/_0.45)]">
-                {proofItems.map((item) => (
+                {copy.proof.items.map((item) => (
                   <li key={item} className="bg-black/[0.46] px-5 py-5 text-base text-white/90 backdrop-blur-sm md:px-7">
                     {item}
                   </li>
@@ -319,14 +282,11 @@ function App() {
           </section>
 
           <StorySection
-            ariaLabel="the scarcity angle"
-            eyebrow="the scarcity angle"
-            title="No New Flavor to Hide Behind"
+            ariaLabel={copy.scarcity.eyebrow}
+            eyebrow={copy.scarcity.eyebrow}
+            title={copy.scarcity.title}
           >
-            <p>
-              We don't launch a new flavor every season. When this batch sells out, the next one
-              waits for proof, not a deadline.
-            </p>
+            <p>{copy.scarcity.p1}</p>
           </StorySection>
 
           <section
@@ -338,34 +298,35 @@ function App() {
           >
             <div className="mx-auto max-w-5xl text-center">
               <p className="readable-kicker text-xs font-medium uppercase tracking-[0.32em] text-white/75">
-                call to action
+                {copy.cta.eyebrow}
               </p>
               <h2 className="hero-title readable-heading mt-5 text-[clamp(4rem,12vw,12rem)] font-light text-white">
-                Bring the Table Back
+                {copy.cta.title}
               </h2>
               <p className="copy-scrim mx-auto mt-8 max-w-3xl text-base leading-7 text-white/90 md:text-lg">
-                The pandemic took the cup we used to share with friends. This is the one we built
-                to bring it back - cupped, dated, and roasted the same unhurried way since the year
-                cheap beans were all we had.
+                {copy.cta.p1}
               </p>
               <Link
                 to="/checkout"
                 className="mt-10 inline-flex rounded-full bg-white px-10 py-4 text-sm font-normal text-black transition-colors hover:bg-neutral-200"
               >
-                Order This Batch
+                {copy.cta.button}
               </Link>
               {currentBatch && (
                 <p className="readable-kicker mt-5 text-sm text-white/75">
-                  Batch {currentBatch.code} roasted {formatRoastDate(currentBatch.roastDate)}. Limited
-                  to {currentBatch.bagsTotal} bags — {currentBatch.bagsLeft} left.
+                  {copy.cta.meta({
+                    code: currentBatch.code,
+                    date: formatRoastDate(currentBatch.roastDate),
+                    total: currentBatch.bagsTotal,
+                    left: currentBatch.bagsLeft
+                  })}
                 </p>
               )}
             </div>
           </section>
 
           <footer className="readable-kicker border-t border-white/20 py-8 text-center text-sm text-white/75">
-            Small batch. Fully traceable. Cupped before it's sold. Best enjoyed with someone else
-            in the room.
+            {copy.footer}
           </footer>
         </div>
       </div>
