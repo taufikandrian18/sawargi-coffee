@@ -36,7 +36,6 @@ const LOCKED_COPY = [
   'Roast date printed on every bag',
   'Batch number for full traceability',
   'One-way valve packaging to lock in aroma',
-  'Best enjoyed within [X] days of roast',
   'the scarcity angle',
   'No New Flavor to Hide Behind',
   "We don't launch a new flavor every season. When this batch sells out, the next one waits for proof, not a deadline.",
@@ -87,5 +86,12 @@ describe('locked copy (BRIEF §5)', () => {
       left: batch.bagsLeft
     })).toBe(expected)
     expect(normalise(document.body.textContent ?? '')).toContain(expected)
+  })
+})
+
+describe('cut copy (BRIEF §9)', () => {
+  it('no longer renders the unfinished "[X] days" proof item (D2)', () => {
+    render(<App />)
+    expect(document.body.textContent).not.toContain('[X]')
   })
 })

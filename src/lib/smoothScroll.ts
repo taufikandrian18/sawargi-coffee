@@ -39,6 +39,23 @@ export function jumpToTop() {
   }
 }
 
+/** Freeze page scroll (e.g. while a full-screen menu is open). */
+export function setScrollLocked(locked: boolean) {
+  document.documentElement.style.overflow = locked ? 'hidden' : ''
+  if (!lenis) return
+  if (locked) lenis.stop()
+  else lenis.start()
+}
+
+/** Scroll to an in-page anchor like "#story", smoothly when Lenis runs. */
+export function scrollToHash(hash: string) {
+  const target = document.querySelector<HTMLElement>(hash)
+  if (!target) return
+  if (lenis) lenis.scrollTo(target)
+  else target.scrollIntoView?.({ block: 'start' })
+  window.history.replaceState(null, '', hash)
+}
+
 export function startSmoothScroll(): () => void {
   if (lenis || !shouldSmoothScroll()) return () => undefined
 

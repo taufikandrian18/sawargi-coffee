@@ -341,7 +341,7 @@ can't drift from them.
 | clean.eyebrow / title | clean hands, careful process / Care Starts Before the Cup |
 | clean.p1 | From drying to packing, our process runs on one rule: nothing touches your coffee that wouldn't touch our own cup. Sanitized equipment, sealed packaging, and a facility standard we don't negotiate on. |
 | proof.eyebrow / title | proof, not promises / Freshness You Can Audit |
-| proof.items | Roast date printed on every bag · Batch number for full traceability · One-way valve packaging to lock in aroma · Best enjoyed within [X] days of roast *(see §9 D2)* |
+| proof.items | Roast date printed on every bag · Batch number for full traceability · One-way valve packaging to lock in aroma *(4th item cut, see §9 D2)* |
 | scarcity.eyebrow / title | the scarcity angle / No New Flavor to Hide Behind |
 | scarcity.p1 | We don't launch a new flavor every season. When this batch sells out, the next one waits for proof, not a deadline. |
 | cta.eyebrow / title | call to action / Bring the Table Back |
@@ -459,7 +459,7 @@ Rules for the flow:
 | # | Question | Default if unanswered |
 | --- | --- | --- |
 | D1 | The hero said **"Quitely"**. Is that a typo for "Quietly"? | **Decided 29 Sep 2026:** corrected to "Quietly" |
-| D2 | Proof item "Best enjoyed within **[X]** days of roast": what's X? | Render as written, flag |
+| D2 | Proof item "Best enjoyed within **[X]** days of roast": what's X? | **Decided 29 Sep 2026:** line cut |
 | D3 | The eyebrows "call to action" and "the scarcity angle" look like internal labels. Keep them as visible text? | Keep verbatim (copy rule), flag |
 | D4 | Add the Matter.js draggable bean field like the reference? It's +~90 KB of JS and mostly a novelty. | No; use the CSS `BeanDrift` only |
 | D5 | Is the accent `--cherry #B8412E` OK? (It must not be Apocalypse orange.) | Use it |

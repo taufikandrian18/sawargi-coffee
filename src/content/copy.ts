@@ -50,12 +50,11 @@ export const copy = {
   proof: {
     eyebrow: 'proof, not promises',
     title: 'Freshness You Can Audit',
-    // BRIEF §9 D2: "[X]" is a placeholder Taufik still has to fill in.
+    // BRIEF §9 D2: "Best enjoyed within [X] days of roast" cut by Taufik on 29 Sep 2026.
     items: [
       'Roast date printed on every bag',
       'Batch number for full traceability',
-      'One-way valve packaging to lock in aroma',
-      'Best enjoyed within [X] days of roast'
+      'One-way valve packaging to lock in aroma'
     ]
   },
   scarcity: {

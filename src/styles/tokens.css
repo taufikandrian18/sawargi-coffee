@@ -16,6 +16,15 @@
 
   --focus-ring: var(--paper); /* set to var(--char) inside cream bands */
 
+  /* Same colours as space-separated channels, for Tailwind opacity modifiers (bg-char/90). */
+  --ink-rgb: 12 10 8;
+  --char-rgb: 27 23 20;
+  --panel-rgb: 20 17 16;
+  --paper-rgb: 236 230 218;
+  --paper-mut-rgb: 142 135 124;
+  --ink-mut-rgb: 90 84 75;
+  --cherry-rgb: 179 63 45;
+
   --radius-card: 28px;
 
   --space-1: 8px;
