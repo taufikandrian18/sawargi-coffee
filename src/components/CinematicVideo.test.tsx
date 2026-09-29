@@ -292,6 +292,15 @@ describe('CinematicVideo', () => {
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 840 })
     child.getBoundingClientRect = vi.fn(() => ({ top: 20 }) as DOMRect)
     expect(getElementDocumentTop(child)).toBe(860)
+
+    // Mid-pin the section itself reads top 0; the pin-spacer keeps its real place.
+    const spacer = document.createElement('div')
+    spacer.className = 'pin-spacer'
+    spacer.getBoundingClientRect = vi.fn(() => ({ top: -300 }) as DOMRect)
+    const pinned = document.createElement('section')
+    pinned.getBoundingClientRect = vi.fn(() => ({ top: 0 }) as DOMRect)
+    spacer.append(pinned)
+    expect(getElementDocumentTop(pinned)).toBe(540)
   })
 
   it('drives mouse parallax through reusable quickTo setters and cleans up', () => {

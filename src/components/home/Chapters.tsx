@@ -1,11 +1,16 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { copy } from '../../content/copy'
 import type { Batch } from '../../data/shop'
 import { BATCHES, formatRoastDate } from '../../data/shop'
 import { Link } from '../../lib/router'
+import { useMediaQuery } from '../../lib/useMediaQuery'
 import { ARTICLE } from '../../pages/JournalPage'
 import { BatchTicket } from '../BatchTicket'
 import { InkButton } from '../ui/InkButton'
+import { Marquee } from '../ui/Marquee'
 import { PaperEdge } from '../ui/PaperEdge'
 import { SplitReveal } from '../ui/SplitReveal'
 import { Wiggle } from '../ui/Wiggle'
@@ -16,6 +21,10 @@ import { MiniCta } from './MiniCta'
  * cream bands cover it (the scrub keeps running underneath). Every chapter
  * keeps data-video-section so scrub progress still spans the whole page.
  */
+
+gsap.registerPlugin(ScrollTrigger)
+
+const PIN_QUERY = '(min-width: 768px) and (prefers-reduced-motion: no-preference)'
 
 const eyebrow = 'text-[0.8125rem] font-medium uppercase tracking-[0.22em]'
 const chapterTitle = 'display-chapter mt-5'
@@ -31,16 +40,30 @@ function CreamBand({ children, className = '' }: { children: ReactNode; classNam
   )
 }
 
-/** §6.1 Proof band: the four proof items. Becomes a marquee in step 5. */
+/**
+ * §6.1 Proof band: a marquee of the proof items and the batch tickets.
+ * Tickets here are display-only (no links) because the ticker moves.
+ */
 export function ProofBand() {
+  const texts = copy.proof.items.map((item) => (
+    <span key={item} className="marquee__text">
+      {item}
+    </span>
+  ))
+  const tickets = BATCHES.map((batch) => (
+    <div key={batch.code} className="w-[min(640px,86vw)]">
+      <BatchTicket batch={batch} variant="strip" as="div" />
+    </div>
+  ))
+  // Alternate text and tickets so neither clumps; keep every item even if the counts differ.
+  const mixed = Array.from({ length: Math.max(texts.length, tickets.length) }, (_, i) => [texts[i], tickets[i]])
+    .flat()
+    .filter(Boolean)
+
   return (
     <CreamBand>
-      <div className="px-4 py-10 md:px-10 md:py-14">
-        <ul aria-label={copy.proof.eyebrow} className="proof-row">
-          {copy.proof.items.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
+      <div className="py-10 md:py-14">
+        <Marquee label={copy.proof.eyebrow} items={mixed} />
       </div>
     </CreamBand>
   )
@@ -49,21 +72,73 @@ export function ProofBand() {
 // Card labels are the opening words of each paragraph, not new copy.
 const STORY_LABELS = ['Before 2020', 'Then', 'Sawargi'] as const
 
-/** §6.2 Chapter I: our story. Three paper cards; pinned horizontal track in step 5. */
+/**
+ * §6.2 Chapter I: our story. From 768px up with motion allowed, the section
+ * pins and the title panel plus three cards slide sideways as you scroll
+ * (BRIEF §3 "Pinned timeline"). Below 768px the cards are a native
+ * horizontal scroller with snap; under reduced motion they stack.
+ */
 export function StoryChapter() {
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const trackRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const section = sectionRef.current
+    const track = trackRef.current
+    if (!section || !track) return
+
+    const mm = gsap.matchMedia()
+    mm.add(PIN_QUERY, () => {
+      section.dataset.layout = 'pinned'
+      // Travel until the rail's right edge (incl. its trailing padding) meets the viewport edge.
+      const distance = () => Math.max(0, track.offsetLeft + track.scrollWidth - window.innerWidth)
+      const tween = gsap.to(track, {
+        x: () => -distance(),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: section,
+          start: 'top top',
+          end: () => `+=${distance()}`,
+          pin: true,
+          scrub: 1,
+          invalidateOnRefresh: true
+        }
+      })
+      // Card widths depend on the web fonts; re-measure once they land.
+      void document.fonts?.ready.then(() => ScrollTrigger.refresh())
+      return () => {
+        tween.scrollTrigger?.kill()
+        tween.kill()
+        delete section.dataset.layout
+      }
+    })
+    return () => mm.revert()
+  }, [])
+
   return (
-    <section id="story" aria-label={copy.story.eyebrow} data-video-section className="chapter">
-      <p className={`${eyebrow} readable-kicker text-paper`}>{copy.story.eyebrow}</p>
-      <SplitReveal text={copy.story.title} className={`${chapterTitle} readable-heading max-w-5xl`} />
-      <div className="story-track mt-14 md:mt-20">
-        {copy.story.paragraphs.map((paragraph, index) => (
-          <article key={paragraph} className="paper-card">
-            <p className="paper-card__label">{STORY_LABELS[index]}</p>
-            <p className="mt-6 text-lg leading-8">{paragraph}</p>
-          </article>
-        ))}
+    <section
+      ref={sectionRef}
+      id="story"
+      aria-label={copy.story.eyebrow}
+      data-video-section
+      className="chapter chapter-story"
+    >
+      {/* The rail moves as one piece when pinned; on phones only the card row scrolls sideways. */}
+      <div ref={trackRef} className="story-rail">
+        <div className="story-intro">
+          <p className={`${eyebrow} readable-kicker text-paper`}>{copy.story.eyebrow}</p>
+          <SplitReveal text={copy.story.title} className={`${chapterTitle} readable-heading`} />
+          <MiniCta />
+        </div>
+        <div className="story-cards">
+          {copy.story.paragraphs.map((paragraph, index) => (
+            <article key={paragraph} className="paper-card story-card">
+              <p className="paper-card__label">{STORY_LABELS[index]}</p>
+              <p className="mt-6 text-lg leading-8">{paragraph}</p>
+            </article>
+          ))}
+        </div>
       </div>
-      <MiniCta />
     </section>
   )
 }
@@ -96,40 +171,95 @@ const PROCESS_STEPS = [
   { key: 'proof', still: '/media/stills/step-3.webp' }
 ] as const
 
+type StepStatus = 'before' | 'active' | 'after'
+
 /**
  * §6.4 Chapter III: process. Numbered because it's a real sequence.
- * Stacked here; the sticky media swap arrives in step 5, and this stacked
- * layout stays as the reduced-motion version.
+ * Desktop with motion: sticky steps (BRIEF §3). The text scrolls on the left,
+ * one still stays pinned on the right and swaps as each step crosses the
+ * middle of the screen. Mobile and reduced motion: each step carries its own
+ * still, stacked.
  */
 export function ProcessChapter() {
+  const sticky = useMediaQuery(PIN_QUERY)
+  const listRef = useRef<HTMLOListElement | null>(null)
+  const [active, setActive] = useState(0)
+
+  useEffect(() => {
+    const list = listRef.current
+    if (!sticky || !list || typeof IntersectionObserver === 'undefined') return
+    const steps = Array.from(list.querySelectorAll<HTMLElement>('.process-step'))
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActive(steps.indexOf(entry.target as HTMLElement))
+        }
+      },
+      // Only the band across the middle 10% of the viewport counts as "active".
+      { rootMargin: '-45% 0px -45% 0px' }
+    )
+    steps.forEach((step) => observer.observe(step))
+    return () => observer.disconnect()
+  }, [sticky])
+
+  const statusOf = (index: number): StepStatus =>
+    !sticky || index === active ? 'active' : index < active ? 'before' : 'after'
+
   return (
-    <section id="process" aria-label={copy.process.eyebrow} data-video-section className="chapter">
-      <ol className="process-steps">
-        {PROCESS_STEPS.map(({ key, still }, index) => {
-          const step = copy[key]
-          return (
-            <li key={key} className="process-step">
-              <div className="process-step__text">
-                <p className="process-step__number">{String(index + 1).padStart(2, '0')}</p>
-                <p className={`${eyebrow} readable-kicker mt-6 text-paper`}>{step.eyebrow}</p>
-                <SplitReveal as="h2" text={step.title} className="display-step readable-heading mt-4" />
-                {'p1' in step && <p className="on-video mt-8 max-w-xl text-lg leading-8">{step.p1}</p>}
-                {'pull' in step && <p className="process-step__pull on-video">{step.pull}</p>}
-                {'items' in step && (
-                  <ul className="proof-list">
-                    {step.items.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
+    <section
+      id="process"
+      aria-label={copy.process.eyebrow}
+      data-video-section
+      data-layout={sticky ? 'sticky' : 'stack'}
+      className="chapter chapter-process"
+    >
+      <div className="process-grid">
+        <ol ref={listRef} className="process-steps">
+          {PROCESS_STEPS.map(({ key, still }, index) => {
+            const step = copy[key]
+            return (
+              <li key={key} className="process-step" data-status={statusOf(index)}>
+                <div className="process-step__text">
+                  <p className="process-step__number">{String(index + 1).padStart(2, '0')}</p>
+                  <p className={`${eyebrow} readable-kicker mt-6 text-paper`}>{step.eyebrow}</p>
+                  <SplitReveal as="h2" text={step.title} className="display-step readable-heading mt-4" />
+                  {'p1' in step && <p className="on-video mt-8 max-w-xl text-lg leading-8">{step.p1}</p>}
+                  {'pull' in step && <p className="process-step__pull on-video">{step.pull}</p>}
+                  {'items' in step && (
+                    <ul className="proof-list">
+                      {step.items.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                {!sticky && (
+                  <figure className="process-step__media">
+                    <img src={still} alt="" width={800} height={1000} loading="lazy" decoding="async" />
+                  </figure>
                 )}
-              </div>
-              <figure className="process-step__media">
-                <img src={still} alt="" width={800} height={1000} loading="lazy" decoding="async" />
-              </figure>
-            </li>
-          )
-        })}
-      </ol>
+              </li>
+            )
+          })}
+        </ol>
+        {sticky && (
+          <div className="process-sticky" aria-hidden="true">
+            <figure className="process-step__media">
+              {PROCESS_STEPS.map(({ key, still }, index) => (
+                <img
+                  key={key}
+                  src={still}
+                  alt=""
+                  width={800}
+                  height={1000}
+                  decoding="async"
+                  data-active={index === active ? 'true' : 'false'}
+                />
+              ))}
+            </figure>
+          </div>
+        )}
+      </div>
       <MiniCta />
     </section>
   )

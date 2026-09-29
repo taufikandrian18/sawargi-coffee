@@ -7,7 +7,7 @@ const css = readFileSync(resolve(__dirname, '../index.css'), 'utf8')
 const block = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
 
 describe('reduced-motion CSS', () => {
-  it.each(['.sw-wiggle', '.sr-word', '.bean-drift', "[data-section-panel='hero']"])('pins %s to its final state', (selector) => {
+  it.each(['.sw-wiggle', '.sr-word', '.bean-drift', "[data-section-panel='hero']", '.marquee__track', ".marquee__group[data-copy='b']"])('pins %s to its final state', (selector) => {
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
     expect(block).toContain(selector)
   })

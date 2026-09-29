@@ -596,40 +596,7 @@
     text-shadow: 0 1px 2px rgb(0 0 0 / 0.9), 0 8px 28px rgb(0 0 0 / 0.7);
   }
 
-  /* Proof band */
-  .proof-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px 40px;
-    font-family: var(--font-display);
-    font-size: clamp(1.5rem, 3vw, 2.5rem);
-    font-weight: 700;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .proof-row li {
-    display: inline-flex;
-    align-items: center;
-    gap: 40px;
-  }
-
-  .proof-row li + li::before {
-    width: 10px;
-    height: 10px;
-    flex-shrink: 0;
-    border-radius: 9999px;
-    background: var(--cherry);
-    content: '';
-  }
-
   /* Paper cards (BRIEF §3) */
-  .story-track {
-    display: grid;
-    gap: 32px;
-  }
-
   .paper-card {
     border-radius: var(--radius-card);
     background: var(--paper);
@@ -862,10 +829,6 @@
   }
 
   @media (min-width: 768px) {
-    .story-track {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
     .process-step {
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
       gap: 64px;
@@ -880,6 +843,192 @@
     .batch-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+  }
+}
+
+/* ---- Step 5 motion: marquee, pinned story rail, sticky process (BRIEF §3). ---- */
+@layer components {
+  /* Marquee */
+  .marquee {
+    overflow: hidden;
+    /* Room for the tickets' outline and 8px hard shadow, which overflow: hidden would clip. */
+    padding-block: 12px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  }
+
+  .marquee__track {
+    display: flex;
+    width: max-content;
+    animation: marquee 45s linear infinite;
+  }
+
+  .marquee:hover .marquee__track,
+  .marquee:focus-within .marquee__track {
+    animation-play-state: paused;
+  }
+
+  .marquee__group {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 56px;
+    padding-right: 56px;
+  }
+
+  .marquee__item {
+    flex-shrink: 0;
+  }
+
+  .marquee__text {
+    display: inline-flex;
+    align-items: center;
+    gap: 56px;
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.2vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .marquee__text::before {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: var(--cherry);
+    content: '';
+  }
+
+  @keyframes marquee {
+    to {
+      translate: -50% 0;
+    }
+  }
+
+  /* Story: stacked by default (reduced motion, no JS). */
+  .story-intro {
+    max-width: 64rem;
+  }
+
+  .story-cards {
+    display: grid;
+    gap: 32px;
+    margin-top: 56px;
+  }
+
+  @media (min-width: 768px) {
+    .story-cards {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 80px;
+    }
+  }
+
+  /* Phones with motion allowed: the cards become a swipeable row with snap. */
+  @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+    .story-cards {
+      display: flex;
+      gap: 16px;
+      margin-inline: -16px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding: 0 16px 16px;
+      scroll-padding-inline: 16px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+
+    .story-cards::-webkit-scrollbar {
+      display: none;
+    }
+
+    .story-card {
+      flex: 0 0 84%;
+      scroll-snap-align: start;
+    }
+  }
+
+  /* Desktop with motion: pinned, the rail slides sideways (set by JS via data-layout). */
+  .chapter-story[data-layout='pinned'] {
+    display: flex;
+    height: 100svh;
+    align-items: center;
+    overflow: clip;
+    padding-block: 0;
+  }
+
+  .chapter-story[data-layout='pinned'] .story-rail {
+    display: flex;
+    width: max-content;
+    align-items: center;
+    gap: 6vw;
+    padding-right: 6vw;
+    will-change: transform;
+  }
+
+  .chapter-story[data-layout='pinned'] .story-intro {
+    flex: 0 0 44vw;
+  }
+
+  .chapter-story[data-layout='pinned'] .story-cards {
+    display: flex;
+    gap: 4vw;
+    margin-top: 0;
+  }
+
+  .chapter-story[data-layout='pinned'] .story-card {
+    flex: 0 0 clamp(320px, 30vw, 460px);
+  }
+
+  /* Process: sticky steps on desktop with motion (data-layout set by React). */
+  .chapter-process[data-layout='sticky'] .process-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 64px;
+  }
+
+  .chapter-process[data-layout='sticky'] .process-step {
+    display: flex;
+    min-height: 80svh;
+    align-items: center;
+    border-top: 0;
+    padding-block: 10svh;
+    opacity: 0.25;
+    transition: opacity 450ms var(--ease-text);
+  }
+
+  .chapter-process[data-layout='sticky'] .process-step[data-status='active'] {
+    opacity: 1;
+  }
+
+  .process-sticky {
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100svh;
+    align-self: start;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .process-sticky .process-step__media {
+    position: relative;
+  }
+
+  .process-sticky img {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    scale: 1.04;
+    transition:
+      opacity 500ms var(--ease-text),
+      scale 900ms var(--ease-text);
+  }
+
+  .process-sticky img[data-active='true'] {
+    opacity: 1;
+    scale: 1;
   }
 }
 
@@ -906,6 +1055,30 @@
     animation: none;
     scale: 1;
     opacity: 0.6;
+  }
+
+  .marquee {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .marquee__track {
+    width: auto;
+    animation: none;
+  }
+
+  .marquee__group {
+    flex-wrap: wrap;
+    gap: 24px 40px;
+    padding-inline: clamp(16px, 3vw, 40px);
+  }
+
+  .marquee__group[data-copy='b'] {
+    display: none;
+  }
+
+  .marquee__text {
+    white-space: normal;
   }
 
   /* The hero only sticks so the scroll exit can play; without motion it scrolls away normally. */

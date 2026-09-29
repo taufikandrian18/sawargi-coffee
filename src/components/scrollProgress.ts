@@ -9,7 +9,10 @@ export const clampProgress = (value: number) => Math.min(1, Math.max(0, value))
 
 export const getElementDocumentTop = (element: HTMLElement) => {
   if (element.dataset.sectionPanel === 'hero') return 0
-  return window.scrollY + element.getBoundingClientRect().top
+  // A ScrollTrigger-pinned section is position: fixed mid-pin; its spacer stays in the flow.
+  const parent = element.parentElement
+  const anchor = parent?.classList.contains('pin-spacer') ? parent : element
+  return window.scrollY + anchor.getBoundingClientRect().top
 }
 
 export const getSectionScrollProgress = ({

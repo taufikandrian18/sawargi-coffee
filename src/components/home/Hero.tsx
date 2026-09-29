@@ -33,16 +33,18 @@ export function Hero({ batch }: { batch?: Batch }) {
 
     const exit = gsap.timeline({ paused: true })
     exit
-      .to(first, { opacity: 0, x: -180, y: -44, filter: 'blur(10px)', ease: 'none' }, 0)
-      .to(second, { opacity: 0, x: 180, y: -44, filter: 'blur(10px)', ease: 'none' }, 0)
-    if (strip) exit.to(strip, { opacity: 0, y: 40, ease: 'none' }, 0)
+      .to(first, { opacity: 0, x: -180, y: -44, filter: 'blur(10px)', ease: 'none', duration: 1 }, 0)
+      .to(second, { opacity: 0, x: 180, y: -44, filter: 'blur(10px)', ease: 'none', duration: 1 }, 0)
+    // The strip sits lowest, so the incoming proof band reaches it first: clear it in the first third.
+    if (strip) exit.to(strip, { opacity: 0, y: 24, ease: 'none', duration: 0.33 }, 0)
     const beans = section.querySelector('[data-testid="bean-drift"]')
-    if (beans) exit.to(beans, { opacity: 0, ease: 'none' }, 0)
+    if (beans) exit.to(beans, { opacity: 0, ease: 'none', duration: 1 }, 0)
 
     const trigger = ScrollTrigger.create({
       trigger: section,
       start: 'top top',
-      end: 'bottom top',
+      // Done by the time the hero is ~65% scrolled, so no half-faded ghost sits behind the story title.
+      end: 'bottom 35%',
       scrub: 0.8,
       animation: exit
     })
