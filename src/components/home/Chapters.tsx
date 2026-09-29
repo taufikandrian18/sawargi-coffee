@@ -32,7 +32,11 @@ const chapterTitle = 'display-chapter mt-5'
 /** Cream band with torn edges. Opaque, so the video is hidden behind it. */
 function CreamBand({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`relative z-10 ${className}`} style={{ '--focus-ring': 'var(--char)' } as CSSProperties}>
+    <div
+      data-nav-tone="light"
+      className={`relative z-10 ${className}`}
+      style={{ '--focus-ring': 'var(--char)' } as CSSProperties}
+    >
       <PaperEdge side="top" />
       <div className="bg-paper text-char">{children}</div>
       <PaperEdge side="bottom" />
@@ -234,8 +238,11 @@ export function ProcessChapter() {
                   )}
                 </div>
                 {!sticky && (
-                  <figure className="process-step__media">
+                  <figure className="process-frame">
                     <img src={still} alt="" width={800} height={1000} loading="lazy" decoding="async" />
+                    <span className="process-frame__chip" aria-hidden="true">
+                      {String(index + 1).padStart(2, '0')} / {String(PROCESS_STEPS.length).padStart(2, '0')}
+                    </span>
                   </figure>
                 )}
               </li>
@@ -244,7 +251,7 @@ export function ProcessChapter() {
         </ol>
         {sticky && (
           <div className="process-sticky" aria-hidden="true">
-            <figure className="process-step__media">
+            <figure className="process-frame process-frame--sticky">
               {PROCESS_STEPS.map(({ key, still }, index) => (
                 <img
                   key={key}
@@ -256,6 +263,9 @@ export function ProcessChapter() {
                   data-active={index === active ? 'true' : 'false'}
                 />
               ))}
+              <span className="process-frame__chip">
+                {String(active + 1).padStart(2, '0')} / {String(PROCESS_STEPS.length).padStart(2, '0')}
+              </span>
             </figure>
           </div>
         )}
@@ -340,7 +350,7 @@ export function ClimaxCta({ batch }: { batch?: Batch }) {
 /** §6.8 Footer (cream, torn top edge). */
 export function HomeFooter() {
   return (
-    <div className="relative z-10" style={{ '--focus-ring': 'var(--char)' } as CSSProperties}>
+    <div data-nav-tone="light" className="relative z-10" style={{ '--focus-ring': 'var(--char)' } as CSSProperties}>
       <PaperEdge side="top" />
       <footer className="bg-paper px-4 pb-10 pt-16 text-char md:px-10 md:pt-24">
         <p className="display-step max-w-4xl">{copy.footer}</p>

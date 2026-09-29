@@ -6,7 +6,8 @@ import { BATCHES } from './data/shop'
 // Behaviour tests for the home page (BRIEF G7). Copy is pinned separately in content/copy.test.tsx.
 
 describe('home page', () => {
-  it('renders the logo and the primary navigation with working targets', () => {
+  it('renders the logo, Buy Now and a menu whose links all have working targets', async () => {
+    const user = userEvent.setup()
     render(<App />)
     const nav = screen.getByRole('navigation', { name: 'primary' })
 
@@ -16,13 +17,19 @@ describe('home page', () => {
       'src',
       '/brand/sawargi-wordmark-white-cropped.png'
     )
-    expect(within(nav).getByRole('link', { name: 'story' })).toHaveAttribute('href', '#story')
-    expect(within(nav).getByRole('link', { name: 'one roast' })).toHaveAttribute('href', '#why-one')
-    expect(within(nav).getByRole('link', { name: 'process' })).toHaveAttribute('href', '#process')
-    expect(within(nav).getByRole('link', { name: 'order' })).toHaveAttribute('href', '#order')
-    expect(within(nav).getByRole('link', { name: 'journal' })).toHaveAttribute('href', '/journal')
     expect(within(nav).getByRole('link', { name: 'Buy Now' })).toHaveAttribute('href', '/checkout')
+    // The centre link pill is gone; sections live in the menu at every width.
+    expect(within(nav).queryByRole('link', { name: 'story' })).not.toBeInTheDocument()
     expect(screen.getByTestId('scroll-progress')).toBeInTheDocument()
+
+    await user.click(within(nav).getByRole('button', { name: 'menu' }))
+    const menu = screen.getByRole('dialog', { name: 'menu' })
+    expect(within(menu).getByRole('link', { name: 'story' })).toHaveAttribute('href', '#story')
+    expect(within(menu).getByRole('link', { name: 'one roast' })).toHaveAttribute('href', '#why-one')
+    expect(within(menu).getByRole('link', { name: 'process' })).toHaveAttribute('href', '#process')
+    expect(within(menu).getByRole('link', { name: 'order' })).toHaveAttribute('href', '#order')
+    expect(within(menu).getByRole('link', { name: 'journal' })).toHaveAttribute('href', '/journal')
+    expect(within(menu).getByRole('link', { name: 'Buy Now' })).toHaveAttribute('href', '/checkout')
   })
 
   it('keeps the nav fixed above the content layer, outside the hero', () => {
@@ -30,6 +37,8 @@ describe('home page', () => {
     const nav = screen.getByRole('navigation', { name: 'primary' })
 
     expect(nav).toHaveClass('fixed', 'z-50')
+    expect(nav).toHaveAttribute('data-tone', 'dark')
+    expect(document.querySelectorAll('[data-nav-tone="light"]').length).toBeGreaterThanOrEqual(4)
     expect(screen.getByTestId('hero-section')).not.toContainElement(nav)
     expect(screen.getByTestId('story-sections-layer')).toHaveClass('z-20')
   })

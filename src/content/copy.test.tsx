@@ -1,4 +1,5 @@
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import App from '../App'
 import { BATCHES, formatRoastDate } from '../data/shop'
 import { copy, navItems } from './copy'
@@ -62,8 +63,10 @@ describe('locked copy (BRIEF §5)', () => {
     expect([...fromMap].sort()).toEqual([...LOCKED_COPY].sort())
   })
 
-  it('renders every locked string on the home page', () => {
+  it('renders every locked string on the home page (nav labels via the menu)', async () => {
     render(<App />)
+    // Section links live in the menu, so open it before reading the page.
+    await userEvent.setup().click(screen.getByRole('button', { name: 'menu' }))
     const pageText = normalise(document.body.textContent ?? '')
 
     for (const text of LOCKED_COPY) {
