@@ -170,35 +170,11 @@ the site reads them live.
 
 ### One-time setup
 
-**On the VPS**, make a key that can only trigger a deploy. `restrict` plus the forced
-`command=` means it can't open a shell or do anything else:
-
-```bash
-ssh-keygen -t ed25519 -N '' -C sawargi-github-deploy -f ~/sawargi-deploy-key
-echo "command=\"/opt/sawargi-coffee/deploy/remote-deploy.sh\",restrict $(cat ~/sawargi-deploy-key.pub)" >> ~/.ssh/authorized_keys
-cat ~/sawargi-deploy-key                                               # → secret VPS_SSH_KEY
-awk -v ip="$(curl -s https://api.ipify.org)" '{print ip, $1, $2}' /etc/ssh/ssh_host_ed25519_key.pub   # → secret VPS_KNOWN_HOSTS
-curl -s https://api.ipify.org; echo                                    # → secret VPS_HOST
-```
-
-**On GitHub:** go to the repo → **Settings → Secrets and variables → Actions → New repository
-secret**, and add these:
-
-| Secret | Value |
-| --- | --- |
-| `VPS_HOST` | The VPS's public IP |
-| `VPS_USER` | `ubuntu` |
-| `VPS_SSH_KEY` | The whole private key, including the `-----BEGIN/END-----` lines |
-| `VPS_KNOWN_HOSTS` | The `awk` line's output. It pins the VPS's identity, so the key is only ever sent to your server |
-| `VPS_PORT` | Only if SSH isn't on port 22 |
-
-Then delete the private key from the VPS (`rm ~/sawargi-deploy-key`). GitHub has the only copy.
-
-**Firewall:** GitHub's runners connect from changing addresses, so SSH (port 22) must be open to
-the internet in the cloud provider's security group. Password logins should be off
-(`PasswordAuthentication no` in `/etc/ssh/sshd_config`).
-
-**Try it:** in the repo's **Actions** tab, pick **CI / Deploy** and click **Run workflow** on `main`.
+Follow **[REMOTE-DEPLOY.md](REMOTE-DEPLOY.md)**. In short:
+1. Run `./deploy/setup-remote-deploy.sh` on the VPS.
+2. Paste the values it prints into GitHub's Actions secrets.
+3. Allow SSH in the cloud firewall.
+4. Run the workflow once.
 
 ### By hand (fallback)
 
