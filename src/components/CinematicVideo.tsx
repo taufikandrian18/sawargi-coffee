@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Hls from 'hls.js'
 import gsap from 'gsap'
+import { isSmoothScrollActive } from '../lib/smoothScroll'
 import { getElementDocumentTop, getSectionScrollProgress } from './scrollProgress'
 
 type CinematicVideoProps = {
@@ -23,6 +24,11 @@ export const END_SEEK_PADDING_SECONDS = FRAME_SECONDS
  * smoother but trails further behind the scrollbar.
  */
 export const SCRUB_SMOOTHING = 0.18
+/**
+ * With Lenis on, scrollY is already eased, so the scrub eases less to avoid
+ * trailing twice (BRIEF §3). Starting value; tune by feel on real devices.
+ */
+export const SCRUB_SMOOTHING_WITH_LENIS = 0.35
 
 type NetworkInformationLike = { saveData?: boolean }
 
@@ -131,7 +137,8 @@ export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideo
       if (!duration || Number.isNaN(duration)) return
 
       const goal = Math.min(Math.max(0, duration - END_SEEK_PADDING_SECONDS), scrollProgress * duration)
-      const eased = rendered < 0 ? goal : rendered + (goal - rendered) * SCRUB_SMOOTHING
+      const smoothing = isSmoothScrollActive() ? SCRUB_SMOOTHING_WITH_LENIS : SCRUB_SMOOTHING
+      const eased = rendered < 0 ? goal : rendered + (goal - rendered) * smoothing
       const settled = Math.abs(goal - eased) < FRAME_SECONDS / 2
       const next = settled ? goal : eased
 

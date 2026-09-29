@@ -57,10 +57,14 @@ vi.mock('gsap', () => ({
 
 vi.mock('hls.js', () => ({ default: mocks.HlsMock }))
 
+const smoothScroll = vi.hoisted(() => ({ active: false }))
+vi.mock('../lib/smoothScroll', () => ({ isSmoothScrollActive: () => smoothScroll.active }))
+
 import {
   CinematicVideo,
   END_SEEK_PADDING_SECONDS,
   SCRUB_SMOOTHING,
+  SCRUB_SMOOTHING_WITH_LENIS,
   pickVideoSource
 } from './CinematicVideo'
 import { getElementDocumentTop, getSectionScrollProgress } from './scrollProgress'
@@ -231,6 +235,23 @@ describe('CinematicVideo', () => {
     flushFrames(60)
     expect(video.currentTime).toBeCloseTo(4)
     expect(rafQueue).toHaveLength(0) // loop stops once settled
+  })
+
+  it('eases less when Lenis is already smoothing the scroll', () => {
+    smoothScroll.active = true
+    render(<CinematicVideo src="/clip.mp4" />)
+    const video = getVideo()
+    mockPlayableVideo(video, 8)
+    fireEvent.loadedMetadata(video)
+    flushFrames()
+
+    setScroll(500)
+    fireEvent.scroll(window)
+    flushFrames()
+    smoothScroll.active = false
+
+    expect(SCRUB_SMOOTHING_WITH_LENIS).toBeGreaterThan(SCRUB_SMOOTHING)
+    expect(video.currentTime).toBeCloseTo(4 * SCRUB_SMOOTHING_WITH_LENIS)
   })
 
   it('does not stack seeks while the browser is still seeking', () => {

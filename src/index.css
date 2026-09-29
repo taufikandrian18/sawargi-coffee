@@ -179,6 +179,203 @@
   }
 }
 
+/* ---- Redesign primitives (BRIEF §3). Techniques re-created, nothing taken from the reference. ---- */
+@layer components {
+  /* Lenis owns smoothing while it runs; native smooth scroll would fight it. */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
+  html.lenis {
+    scroll-behavior: auto;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: clip;
+  }
+
+  .lenis.lenis-smooth iframe {
+    pointer-events: none;
+  }
+
+  /* SplitReveal: readable by default, hidden only once JS arms it. */
+  .sr-mask {
+    display: inline-block;
+    overflow: hidden;
+    /* Room for descenders so the mask doesn't crop g, p, y. */
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
+    vertical-align: bottom;
+  }
+
+  .sr-word {
+    display: inline-block;
+    transition: transform var(--dur-reveal) var(--ease-text);
+    transition-delay: calc(var(--sr-delay, 0s) + var(--i, 0) * var(--stagger-word));
+  }
+
+  [data-reveal='armed'] .sr-word {
+    transform: translateY(110%);
+  }
+
+  /* Wiggle: uses `rotate`, so it composes with the reveal's transform. */
+  .sw-wiggle {
+    display: inline-block;
+    transform-origin: 50% 60%;
+    animation: sw-wiggle 1.1s ease-in-out infinite alternate;
+  }
+
+  @keyframes sw-wiggle {
+    from {
+      rotate: 2deg;
+    }
+    to {
+      rotate: -2deg;
+    }
+  }
+
+  /* InkButton */
+  .ink-btn {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 9999px;
+    padding: 0 28px;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: scale 120ms ease-out;
+  }
+
+  .ink-btn:active {
+    scale: 0.975;
+  }
+
+  .ink-btn:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
+
+  .ink-btn__fill {
+    position: absolute;
+    inset: -1px; /* past the rounded edge, so no base-colour rim shows through anti-aliasing */
+    z-index: -1;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 350ms var(--ease-text);
+  }
+
+  .ink-btn__label {
+    transition: color var(--dur-hover) ease-out;
+  }
+
+  .ink-btn:hover .ink-btn__fill,
+  .ink-btn:focus-visible .ink-btn__fill {
+    clip-path: inset(0);
+  }
+
+  .ink-btn--paper {
+    background: var(--paper);
+    color: var(--char);
+  }
+
+  .ink-btn--paper .ink-btn__fill {
+    background: var(--cherry);
+  }
+
+  .ink-btn--paper:hover .ink-btn__label,
+  .ink-btn--paper:focus-visible .ink-btn__label {
+    color: var(--paper);
+  }
+
+  .ink-btn--cherry {
+    background: var(--cherry);
+    color: var(--paper);
+  }
+
+  .ink-btn--cherry .ink-btn__fill {
+    background: var(--char);
+  }
+
+  /* PaperEdge: sits on the band's edge and overlaps it by 1px to hide seams. */
+  .paper-edge {
+    display: block;
+    width: 100%;
+    height: clamp(18px, 2.4vw, 36px);
+    color: var(--paper);
+  }
+
+  .paper-edge--top {
+    margin-bottom: -1px;
+  }
+
+  .paper-edge--bottom {
+    margin-top: -1px;
+    scale: 1 -1;
+  }
+
+  /* CursorDot */
+  /* Difference blend: reads on both dark and cream bands without a second colour. */
+  .cursor-dot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 80;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: difference;
+    transition: opacity 250ms ease-out;
+  }
+
+  .cursor-dot[data-visible='true'] {
+    opacity: 1;
+  }
+
+  /* The ring sits over button fills (cherry or char on hover); blending there would tint it off-palette. */
+  .cursor-dot[data-active='true'] {
+    mix-blend-mode: normal;
+  }
+
+  .cursor-dot__disc {
+    display: block;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border: 1.5px solid var(--paper);
+    border-radius: 9999px;
+    background: var(--paper);
+    transition:
+      scale var(--dur-hover) var(--ease-text),
+      background-color var(--dur-hover) ease-out;
+  }
+
+  /* Over links and buttons: grow into a ring so the label underneath stays readable. */
+  .cursor-dot[data-active='true'] .cursor-dot__disc {
+    scale: 2.6;
+    border-width: 0.6px;
+    background-color: transparent;
+  }
+
+  /* Grain */
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
 @layer utilities {
   .hero-title {
     letter-spacing: -0.04em;
@@ -215,6 +412,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Final states, not frozen mid-animation (BRIEF §0.5). */
+  .sw-wiggle {
+    animation: none;
+    rotate: 0deg;
+  }
+
+  .sr-word {
+    transform: none !important;
+  }
+
   *,
   *::before,
   *::after {

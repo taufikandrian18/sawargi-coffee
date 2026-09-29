@@ -9,7 +9,12 @@
   --paper: #ece6da; /* cream: text on dark, card background */
   --paper-mut: #8e877c; /* muted text on dark */
   --ink-mut: #5a544b; /* muted text on paper */
-  --cherry: #b8412e; /* the only accent: dried coffee-cherry red */
+  /* The only accent: dried coffee-cherry red. BRIEF default was #b8412e, which is 4.41:1 with
+     --paper; darkened a notch to pass 4.5:1 (4.61:1). On --ink it is 3.45:1: large text and
+     non-text marks only there. */
+  --cherry: #b33f2d;
+
+  --focus-ring: var(--paper); /* set to var(--char) inside cream bands */
 
   --radius-card: 28px;
 
