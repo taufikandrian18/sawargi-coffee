@@ -25,7 +25,12 @@ if ! wp core is-installed >/dev/null 2>&1; then
   fi
 fi
 
-wp rewrite structure '/%postname%/' --hard
+# The Docker image only copies WordPress in on first start and never upgrades it, and
+# WooCommerce requires a recent WordPress. Bring core up to date before installing it.
+wp core update
+wp core update-db
+
+wp rewrite structure '/%postname%/'   # Caddy handles pretty URLs; there's no .htaccess to write
 wp plugin is-installed woocommerce || wp plugin install woocommerce
 wp plugin activate woocommerce
 
