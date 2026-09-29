@@ -26,7 +26,7 @@
 		root * /srv/wp
 		@blocked path_regexp ^{$BASE_PATH}/shop/(xmlrpc\.php|wp-config\.php|readme\.html|license\.txt|wp-content/uploads/.*\.php)$
 		respond @blocked 404
-		php_fastcgi wordpress:9000 {
+		php_fastcgi sawargi-wordpress:9000 {
 			# WordPress is in a subfolder, so its front controller is too.
 			try_files {path} {path}/index.php {$BASE_PATH}/shop/index.php
 		}
