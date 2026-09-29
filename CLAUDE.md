@@ -25,6 +25,7 @@ mkdir -p .claude/skills && cp -r design-skills/* .claude/skills/   # make the de
 - `npx tsc -b`: type-check.
 - `npm run lint`: ESLint (warnings OK, 0 errors).
 - `npm run build`: production build into `dist/`.
+- `VITE_WC_URL=https://shop.example.com npm run dev`: run against a live WooCommerce store.
 
 Run tests, the type-check and lint before every commit. Don't claim something works visually unless
 you've seen a screenshot.
@@ -40,6 +41,9 @@ you've seen a screenshot.
 | `src/data/shop.ts` | Product, batches (sample data), grinds, shipping, currencies. Single source of truth for prices |
 | `src/pages/CheckoutPage.tsx` | Dummy checkout (no real payment, stores nothing) |
 | `src/pages/JournalPage.tsx` | Journal index + researched article. Evidence notes are in `docs/research/` |
+| `src/data/catalog.ts`, `src/lib/catalog.tsx` | The catalogue the site renders: sample data, or live batches/stock from WooCommerce when `VITE_WC_URL` is set |
+| `wordpress/mu-plugins/sawargi-headless.php` | WordPress plugin: batch fields in WP admin + `extensions.sawargi` on the Store API. Contract-tested by `src/data/contract.test.ts` |
+| `deploy/` | VPS stack: Caddy + WordPress (PHP-FPM) + MariaDB via Docker Compose, plus build/bootstrap/backup scripts. Guide: `docs/cms/WORDPRESS.md` |
 
 ## Rules
 
@@ -50,8 +54,8 @@ you've seen a screenshot.
 - **One animation engine.** Use GSAP (+ ScrollTrigger) with Lenis for smooth scroll. Don't add
   framer-motion or jQuery.
 - **Every animation needs a reduced-motion path** that renders the final state.
-- **Deep links need hosting config.** Add SPA fallback config (`vercel.json` / `public/_redirects`)
-  so `/checkout` and `/journal` work on deploy.
+- **Deep links need hosting config.** On the VPS, Caddy's `try_files` handles SPA routes
+  (`deploy/Caddyfile`); `vercel.json` / `public/_redirects` remain for other hosts.
 - **Media stays out of git.** Don't commit files > 25 MB. The old 4K HLS folder is intentionally
   git-ignored.
 - **Talk to Taufik like an advisor.** Lead with the uncomfortable truth, tag claims `[Certain]`,

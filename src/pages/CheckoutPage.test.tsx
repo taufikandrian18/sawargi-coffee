@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { BATCHES } from '../data/shop'
 import { initialBatchCode } from '../lib/batchLink'
 import { CheckoutPage } from './CheckoutPage'
 
@@ -23,9 +24,10 @@ describe('checkout', () => {
   })
 
   it('ignores ?batch= for sold-out or unknown batches', () => {
-    expect(initialBatchCode('?batch=SWG-CN-012')).toBe('SWG-CN-014')
-    expect(initialBatchCode('?batch=NOPE')).toBe('SWG-CN-014')
-    expect(initialBatchCode('')).toBe('SWG-CN-014')
+    expect(initialBatchCode(BATCHES, '?batch=SWG-CN-012')).toBe('SWG-CN-014')
+    expect(initialBatchCode(BATCHES, '?batch=NOPE')).toBe('SWG-CN-014')
+    expect(initialBatchCode(BATCHES, '')).toBe('SWG-CN-014')
+    expect(initialBatchCode([], '?batch=SWG-CN-014')).toBeUndefined()
   })
 
   it('updates the total with quantity and currency', async () => {

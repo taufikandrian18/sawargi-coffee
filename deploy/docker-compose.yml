@@ -1,0 +1,82 @@
+# Sawargi on one VPS: the designed site + WordPress/WooCommerce behind Caddy.
+#   https://SITE_DOMAIN        → the React site (static files in ./site)
+#   https://SHOP_DOMAIN        → WordPress + WooCommerce (admin, checkout, payment plugins)
+# See docs/cms/WORDPRESS.md for the full walkthrough.
+
+name: sawargi
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in deploy/.env}
+      SHOP_DOMAIN: ${SHOP_DOMAIN:?set SHOP_DOMAIN in deploy/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./site:/srv/site:ro
+      - wp_data:/var/www/html:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - wordpress
+
+  wordpress:
+    image: wordpress:6-php8.3-fpm
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: ${DB_NAME:-sawargi}
+      WORDPRESS_DB_USER: ${DB_USER:-sawargi}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in deploy/.env}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'https://${SHOP_DOMAIN}');
+        define('WP_SITEURL', 'https://${SHOP_DOMAIN}');
+        define('SAWARGI_FRONTEND_ORIGIN', 'https://${SITE_DOMAIN}');
+        define('SAWARGI_FRONTEND_URL', 'https://${SITE_DOMAIN}');
+        define('DISALLOW_FILE_EDIT', true);
+    volumes:
+      - wp_data:/var/www/html
+      - ../wordpress/mu-plugins/sawargi-headless.php:/var/www/html/wp-content/mu-plugins/sawargi-headless.php:ro
+      - ./php-uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+    depends_on:
+      - db
+
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:-sawargi}
+      MARIADB_USER: ${DB_USER:-sawargi}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in deploy/.env}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in deploy/.env}
+    volumes:
+      - db_data:/var/lib/mysql
+    # No ports: the database is only reachable from the wordpress container.
+
+  # One-off WP-CLI runs: docker compose run --rm wpcli wp plugin list
+  wpcli:
+    image: wordpress:cli-php8.3
+    profiles: ["tools"]
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: ${DB_NAME:-sawargi}
+      WORDPRESS_DB_USER: ${DB_USER:-sawargi}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in deploy/.env}
+    volumes:
+      - wp_data:/var/www/html
+      - ../wordpress/mu-plugins/sawargi-headless.php:/var/www/html/wp-content/mu-plugins/sawargi-headless.php:ro
+    depends_on:
+      - db
+
+volumes:
+  wp_data:
+  db_data:
+  caddy_data:
+  caddy_config:
