@@ -1,14 +1,17 @@
 # Photo slots
 
-The redesign uses no stock or borrowed photography (BRIEF G4). Until real photos exist, the
-page uses stills extracted from the scrub video (`../stills/`) and original SVG beans.
+The redesign uses no stock or borrowed photography (BRIEF G4). **Only use photos Sawargi owns or
+has a licence for.** Anything committed to git stays in its history, so check rights before
+adding a file, not after.
 
-Slots waiting for real photography, with the file each one should replace:
-
-| Slot | Used in | Replace | Spec |
+| Slot | Used in | File | Current source |
 | --- | --- | --- | --- |
-| Cupping table | Process step 01 ("Cupped, Scored, Then Released") | `../stills/step-1.webp` | 4:5, 800×1000, WebP ≤ 150 KB |
-| Clean facility / packing | Process step 02 ("Care Starts Before the Cup") | `../stills/step-2.webp` | 4:5, 800×1000, WebP ≤ 150 KB |
-| Bag with printed roast date and batch number | Process step 03 ("Freshness You Can Audit") | `../stills/step-3.webp` | 4:5, 800×1000, WebP ≤ 150 KB |
+| Cupping / harvest | Process step 01 ("Cupped, Scored, Then Released") | `../stills/step-1.webp` | Frame from Sawargi's scrub video (placeholder until an owned photo exists) |
+| Roasting / packing | Process step 02 ("Care Starts Before the Cup") | `../stills/step-2.webp` | Frame from Sawargi's scrub video (placeholder until an owned photo exists) |
+| Sawargi bag | Process step 03 ("Freshness You Can Audit") | `../stills/step-3.webp` | Supplied by Taufik, 29 Sep 2026 |
 
-Only use photos you own. Keep each file under 25 MB (repo rule) and, in practice, under 150 KB.
+Spec: 4:5, up to 800×1000, WebP ≤ 150 KB. Keep the subject centred: the frame's rounded,
+lopsided corners crop the edges.
+
+Step 02's copy is about sanitized equipment, sealed packaging and a facility standard, so its
+photo should show that (clean equipment, sealing, packing), not a process Sawargi doesn't use.

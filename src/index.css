@@ -715,20 +715,47 @@
     content: '';
   }
 
-  /* An original soft, lopsided frame for the stills. */
-  .process-step__media {
+  /* Inset-card frame for the process photos (my-design-taste: framed, rounded-[2rem], gradient). */
+  .process-frame {
+    position: relative;
     width: 100%;
-    max-width: 440px;
+    max-width: 460px;
     aspect-ratio: 4 / 5;
     overflow: hidden;
-    border-radius: 46% 54% 40% 60% / 34% 38% 62% 66%;
+    border-radius: 2rem;
     background: var(--panel);
+    box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
   }
 
-  .process-step__media img {
+  .process-frame::after {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgb(0 0 0 / 0.3) 0%, transparent 35%, transparent 60%, rgb(0 0 0 / 0.55) 100%);
+    content: '';
+  }
+
+  .process-frame img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .process-frame__chip {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 2;
+    border-radius: 9999px;
+    background: rgb(12 10 8 / 0.55);
+    padding: 6px 12px;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--paper);
+    backdrop-filter: blur(8px);
   }
 
   .batch-grid {
@@ -736,20 +763,59 @@
     gap: 32px;
   }
 
-  /* Nav */
-  .nav-link {
+  /* Nav: no pill; logo and menu button sit on the video and flip to ink over cream bands. */
+  .home-nav[data-tone='light'] {
+    --focus-ring: var(--char);
+  }
+
+  /* Soft fade behind the bar instead of a box, so text scrolling under the logo can't collide with it. */
+  .home-nav::before {
+    position: absolute;
+    inset: 0 0 -28px;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgb(12 10 8 / 0.9) 0%, rgb(12 10 8 / 0.6) 55%, transparent 100%);
+    content: '';
+    transition: opacity 250ms ease-out;
+  }
+
+  .home-nav[data-tone='light']::before {
+    background: linear-gradient(180deg, rgb(236 230 218 / 0.92) 0%, rgb(236 230 218 / 0.6) 55%, transparent 100%);
+  }
+
+  .nav-logo img {
+    transition:
+      filter 250ms ease-out,
+      opacity 250ms ease-out;
+  }
+
+  .home-nav[data-tone='light'] .nav-logo img {
+    filter: brightness(0);
+    opacity: 0.88;
+  }
+
+  .nav-menu-btn {
+    display: inline-flex;
+    min-width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid rgb(236 230 218 / 0.35);
     border-radius: 9999px;
-    padding: 8px 20px;
-    font-size: 0.875rem;
-    color: var(--paper-mut);
-    transition: color var(--dur-hover) ease-out;
-  }
-
-  .nav-link:hover {
+    padding: 0 14px;
     color: var(--paper);
+    cursor: pointer;
+    transition:
+      color 250ms ease-out,
+      border-color 250ms ease-out;
   }
 
-  .nav-link:focus-visible,
+  .home-nav[data-tone='light'] .nav-menu-btn {
+    border-color: rgb(27 23 20 / 0.3);
+    color: var(--char);
+  }
+
   .nav-focus:focus-visible,
   .mobile-menu__link:focus-visible,
   .footer-link:focus-visible {
@@ -757,17 +823,17 @@
     outline-offset: 3px;
   }
 
-  .nav-progress {
-    position: absolute;
-    right: 24px;
-    bottom: 3px;
-    left: 24px;
+  .scroll-progress {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 55;
     height: 2px;
-    overflow: hidden;
-    border-radius: 9999px;
+    pointer-events: none;
   }
 
-  .nav-progress > span {
+  .scroll-progress > span {
     display: block;
     height: 100%;
     transform: scaleX(0);
@@ -834,7 +900,7 @@
       gap: 64px;
     }
 
-    .process-step__media {
+    .process-frame {
       justify-self: end;
     }
   }
@@ -1012,21 +1078,22 @@
     justify-content: flex-end;
   }
 
-  .process-sticky .process-step__media {
-    position: relative;
+  .process-frame--sticky {
+    max-width: min(520px, 38vw);
   }
 
-  .process-sticky img {
+  /* Cross-fade with a slow settle-in zoom as each step becomes active. */
+  .process-frame--sticky img {
     position: absolute;
     inset: 0;
     opacity: 0;
-    scale: 1.04;
+    scale: 1.08;
     transition:
-      opacity 500ms var(--ease-text),
-      scale 900ms var(--ease-text);
+      opacity 600ms var(--ease-text),
+      scale 1400ms var(--ease-text);
   }
 
-  .process-sticky img[data-active='true'] {
+  .process-frame--sticky img[data-active='true'] {
     opacity: 1;
     scale: 1;
   }

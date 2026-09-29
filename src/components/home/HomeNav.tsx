@@ -9,13 +9,15 @@ import { InkButton } from '../ui/InkButton'
 
 gsap.registerPlugin(ScrollTrigger)
 
+/** Height of the line (px from the top) the nav reads its colour from. */
+const NAV_LINE = 48
+const FOCUSABLE = 'a[href], button:not([disabled])'
+
+type NavTone = 'dark' | 'light'
+
 function Logo() {
   return (
-    <a
-      href="#top"
-      aria-label="sawargi home"
-      className="nav-focus flex min-h-11 items-center rounded-full bg-char/90 px-3 py-2 text-paper backdrop-blur md:min-h-12 md:px-4"
-    >
+    <a href="#top" aria-label="sawargi home" className="nav-focus nav-logo flex min-h-11 items-center py-2 pr-2 md:min-h-12">
       <span data-testid="sawargi-logo" className="sawargi-composite-logo flex items-center">
         <img
           src="/brand/sawargi-mark-white-cropped.png"
@@ -34,18 +36,19 @@ function Logo() {
   )
 }
 
-const FOCUSABLE = 'a[href], button:not([disabled])'
-
 /**
- * Floating dark pill with a thin --cherry scroll-progress line under it (BRIEF §6).
- * Below md: logo, Buy Now and a menu button that opens a full-screen menu
- * which traps focus, closes on Escape and hands focus back to the button.
+ * Minimal nav: logo sitting straight on the scrub video, Buy Now, and a menu
+ * button (every width) that opens a full-screen menu. The logo and menu
+ * button flip to ink while a cream band ([data-nav-tone="light"]) passes
+ * under them, so they never vanish. A thin --cherry line along the top edge
+ * shows scroll progress.
  */
 export function HomeNav() {
   const progressRef = useRef<HTMLSpanElement | null>(null)
   const menuButtonRef = useRef<HTMLButtonElement | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const [open, setOpen] = useState(false)
+  const [tone, setTone] = useState<NavTone>('dark')
 
   // Scroll progress: a direct mapping, not an animation, so it stays on under reduced motion.
   useEffect(() => {
@@ -58,6 +61,25 @@ export function HomeNav() {
       onUpdate: (self) => setScale(self.progress)
     })
     return () => trigger.kill()
+  }, [])
+
+  // Nav tone follows whichever band is under the nav line.
+  useEffect(() => {
+    const bands = Array.from(document.querySelectorAll<HTMLElement>('[data-nav-tone="light"]'))
+    const inside = new Set<HTMLElement>()
+    const triggers = bands.map((band) =>
+      ScrollTrigger.create({
+        trigger: band,
+        start: `top ${NAV_LINE}px`,
+        end: `bottom ${NAV_LINE}px`,
+        onToggle: (self) => {
+          if (self.isActive) inside.add(band)
+          else inside.delete(band)
+          setTone(inside.size > 0 ? 'light' : 'dark')
+        }
+      })
+    )
+    return () => triggers.forEach((trigger) => trigger.kill())
   }, [])
 
   useEffect(() => {
@@ -107,42 +129,31 @@ export function HomeNav() {
 
   return (
     <>
+      <span className="scroll-progress" aria-hidden="true">
+        <span ref={progressRef} data-testid="scroll-progress" />
+      </span>
+
       <nav
         aria-label="primary"
-        className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between gap-4 px-4 py-4 md:px-8 md:py-6"
+        data-tone={tone}
+        className="home-nav fixed left-0 right-0 top-0 z-50 flex items-center justify-between gap-4 px-4 py-4 md:px-8 md:py-6"
       >
         <Logo />
 
-        <div className="nav-pill relative hidden items-center gap-1 rounded-full bg-char/90 px-3 py-2 backdrop-blur md:flex">
-          {navItems.map((item) =>
-            item.href.startsWith('/') ? (
-              <Link key={item.href} to={item.href} className="nav-link">
-                {item.label}
-              </Link>
-            ) : (
-              <a key={item.href} href={item.href} className="nav-link">
-                {item.label}
-              </a>
-            )
-          )}
-          <span className="nav-progress" aria-hidden="true">
-            <span ref={progressRef} data-testid="scroll-progress" />
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:gap-3">
           <InkButton href="/checkout" variant="cherry" className="ink-btn--small">
             {copy.nav.buyNow}
           </InkButton>
           <button
             ref={menuButtonRef}
             type="button"
-            className="nav-focus inline-flex h-11 w-11 items-center justify-center rounded-full bg-char/90 text-paper backdrop-blur md:hidden"
+            className="nav-focus nav-menu-btn"
             aria-expanded={open}
-            aria-controls="mobile-menu"
+            aria-controls="site-menu"
             aria-label="menu"
             onClick={() => setOpen(true)}
           >
+            <span className="hidden text-[0.8125rem] font-medium uppercase tracking-[0.22em] md:inline">menu</span>
             <svg aria-hidden="true" width="18" height="12" viewBox="0 0 18 12" fill="none">
               <path d="M0 1h18M0 6h18M0 11h18" stroke="currentColor" strokeWidth="1.5" />
             </svg>
@@ -153,11 +164,11 @@ export function HomeNav() {
       {open && (
         <div
           ref={menuRef}
-          id="mobile-menu"
+          id="site-menu"
           role="dialog"
           aria-modal="true"
           aria-label="menu"
-          className="mobile-menu fixed inset-0 z-[60] flex flex-col bg-ink px-4 pb-10 pt-4 text-paper md:hidden"
+          className="mobile-menu fixed inset-0 z-[60] flex flex-col bg-ink px-4 pb-10 pt-4 text-paper md:px-10 md:pb-14 md:pt-6"
         >
           <div className="flex items-center justify-end">
             <button
@@ -168,7 +179,7 @@ export function HomeNav() {
               close
             </button>
           </div>
-          <ul className="mt-10 flex flex-col gap-2">
+          <ul className="mt-10 flex flex-col gap-2 md:mt-16">
             {navItems.map((item) => (
               <li key={item.href}>
                 {item.href.startsWith('/') ? (
