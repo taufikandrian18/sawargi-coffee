@@ -114,6 +114,22 @@ a random one once. Either way, keep it in a password manager and remove it from 
 
 ## 3. Adding a batch (the weekly job)
 
+**Fastest: one command on the VPS.** Copy the template, fill in the real values, run it:
+
+```bash
+cd /opt/sawargi-coffee
+cp deploy/batches/TEMPLATE.env deploy/batches/SWG-CN-015.env
+nano deploy/batches/SWG-CN-015.env
+./deploy/add-batch.sh deploy/batches/SWG-CN-015.env
+```
+
+It creates everything below in one go: a variable product (SKU = code) in **Batch**, managed
+stock, one variation per grind at your price, and the Sawargi batch fields. It refuses an
+incomplete file and a code that already exists. Set `STATUS=draft` to check it in WP admin before
+it goes live. After that, stock falls with paid orders; change it by hand in WP admin.
+
+**By hand in WP admin** (same result):
+
 1. **Products → Add New**. Name it e.g. `Ciwidey Natural · SWG-CN-015`.
 2. **Product data: Variable product.**
 3. **Inventory tab:** SKU = the batch code (`SWG-CN-015`). Tick **Manage stock**, set
@@ -136,18 +152,63 @@ WooCommerce → Settings → Payments. Install a gateway plugin from Plugins →
 approved merchant account with the gateway before real payments work. Test with the gateway's
 sandbox first.
 
-## 5. Updating the site
+## 5. Updating the site (GitHub → VPS pipeline)
 
-After pulling new code, or after changing `PUBLIC_URL`/`BASE_PATH`:
+Every push to `main` (a merged PR) runs `.github/workflows/deploy.yml`:
+
+1. **On GitHub's runners:** `npm ci`, type-check, tests, lint, and a build for `/sawargi-coffee`
+   against the live store. A failing check stops the deploy, so the site never goes down over a
+   bad build. Building there also keeps the load off the VPS, which is short on memory.
+2. **Over SSH:** the built site is sent to the VPS, where `deploy/remote-deploy.sh`:
+   - fast-forwards `/opt/sawargi-coffee` to that commit;
+   - runs `docker compose up -d` if anything in `deploy/` changed, recreating Caddy when its
+     Caddyfile changed and restarting WordPress when the plugin changed;
+   - swaps the new site into `deploy/site`.
+
+Pull requests get the same checks, without the deploy. Stock and batches never need a deploy;
+the site reads them live.
+
+### One-time setup
+
+**On the VPS**, make a key that can only trigger a deploy. `restrict` plus the forced
+`command=` means it can't open a shell or do anything else:
+
+```bash
+ssh-keygen -t ed25519 -N '' -C sawargi-github-deploy -f ~/sawargi-deploy-key
+echo "command=\"/opt/sawargi-coffee/deploy/remote-deploy.sh\",restrict $(cat ~/sawargi-deploy-key.pub)" >> ~/.ssh/authorized_keys
+cat ~/sawargi-deploy-key                                               # → secret VPS_SSH_KEY
+awk -v ip="$(curl -s https://api.ipify.org)" '{print ip, $1, $2}' /etc/ssh/ssh_host_ed25519_key.pub   # → secret VPS_KNOWN_HOSTS
+curl -s https://api.ipify.org; echo                                    # → secret VPS_HOST
+```
+
+**On GitHub:** go to the repo → **Settings → Secrets and variables → Actions → New repository
+secret**, and add these:
+
+| Secret | Value |
+| --- | --- |
+| `VPS_HOST` | The VPS's public IP |
+| `VPS_USER` | `ubuntu` |
+| `VPS_SSH_KEY` | The whole private key, including the `-----BEGIN/END-----` lines |
+| `VPS_KNOWN_HOSTS` | The `awk` line's output. It pins the VPS's identity, so the key is only ever sent to your server |
+| `VPS_PORT` | Only if SSH isn't on port 22 |
+
+Then delete the private key from the VPS (`rm ~/sawargi-deploy-key`). GitHub has the only copy.
+
+**Firewall:** GitHub's runners connect from changing addresses, so SSH (port 22) must be open to
+the internet in the cloud provider's security group. Password logins should be off
+(`PasswordAuthentication no` in `/etc/ssh/sshd_config`).
+
+**Try it:** in the repo's **Actions** tab, pick **CI / Deploy** and click **Run workflow** on `main`.
+
+### By hand (fallback)
 
 ```bash
 cd /opt/sawargi-coffee && git pull && ./deploy/build-site.sh
+cd deploy && docker compose up -d --force-recreate caddy    # only if deploy/Caddyfile changed
 ```
 
-If you changed `PUBLIC_URL`/`BASE_PATH`, also run `cd deploy && docker compose up -d`, so
-WordPress picks up its new address.
-
-Stock and batches **don't** need a rebuild; the site reads them live.
+`git pull` replaces the Caddyfile with a new file, and a single-file bind mount keeps showing the
+container the old one. The pipeline handles this for you; by hand, you have to recreate Caddy.
 
 ## 6. Backups
 

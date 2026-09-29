@@ -94,6 +94,7 @@ services:
     volumes:
       - wp_data:/srv/wp${BASE_PATH}/shop
       - ../wordpress/mu-plugins/sawargi-headless.php:/srv/wp${BASE_PATH}/shop/wp-content/mu-plugins/sawargi-headless.php:ro
+      - ./add-batch.php:/deploy/add-batch.php:ro
     depends_on:
       - db
 
