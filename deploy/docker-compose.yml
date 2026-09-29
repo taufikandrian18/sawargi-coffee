@@ -2,8 +2,9 @@
 #   ${PUBLIC_URL}${BASE_PATH}/                → the React site (static files in ./site)
 #   ${PUBLIC_URL}${BASE_PATH}/shop/           → WordPress + WooCommerce (checkout, payment plugins)
 #   ${PUBLIC_URL}${BASE_PATH}/shop/wp-admin/  → WP admin (${BASE_PATH}/wp-admin redirects here)
-# Your host web server (nginx/Apache) keeps ports 80/443 and HTTPS, and forwards
-# ${BASE_PATH} to this stack on 127.0.0.1:${HTTP_PORT}. See docs/cms/WORDPRESS.md.
+# The VPS's front proxy (a Caddy container that owns ports 80/443 and HTTPS) forwards
+# ${BASE_PATH} to this stack's Caddy over the shared Docker network ${PROXY_NETWORK},
+# where it answers as `sawargi-caddy:80`. See docs/cms/WORDPRESS.md.
 
 name: sawargi
 
@@ -12,8 +13,12 @@ services:
     image: caddy:2
     restart: unless-stopped
     ports:
-      # Localhost only: the host web server is the public entrance.
+      # Localhost only, for checks from the VPS shell. The public entrance is the front proxy.
       - "127.0.0.1:${HTTP_PORT:-8088}:80"
+    networks:
+      default:
+      proxy:
+        aliases: [sawargi-caddy]
     environment:
       BASE_PATH: ${BASE_PATH:?set BASE_PATH in deploy/.env, e.g. /sawargi-coffee}
     volumes:
@@ -53,6 +58,8 @@ services:
   db:
     image: mariadb:11
     restart: unless-stopped
+    # A small shop needs a small buffer pool; the VPS is shared with many other stacks.
+    command: ["--innodb-buffer-pool-size=64M"]
     environment:
       MARIADB_DATABASE: ${DB_NAME:-sawargi}
       MARIADB_USER: ${DB_USER:-sawargi}
@@ -90,3 +97,10 @@ volumes:
   db_data:
   caddy_data:
   caddy_config:
+
+networks:
+  default:
+  # The front proxy's network (docker inspect <proxy container>). Created by that stack, not this one.
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?set PROXY_NETWORK in deploy/.env (the front proxy's Docker network)}

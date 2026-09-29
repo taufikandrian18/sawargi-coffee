@@ -10,8 +10,8 @@ https://website.taufikandrian.my.id/sawargi-coffee/            the designed site
 https://website.taufikandrian.my.id/sawargi-coffee/shop/       WordPress + WooCommerce (cart, checkout, payments)
 https://website.taufikandrian.my.id/sawargi-coffee/wp-admin    → redirects to …/shop/wp-admin/
 
-Browser ──HTTPS──► host nginx/Apache (keeps ports 80/443 and the certificate)
-                     └─ /sawargi-coffee/* ──► 127.0.0.1:8088  Caddy container
+Browser ──HTTPS──► front proxy container (n8n-caddy-1: owns ports 80/443 and the certificate)
+                     └─ /sawargi-coffee* ──► sawargi-caddy:80 over the shared Docker network
                                                 ├─ /sawargi-coffee/shop/* → PHP-FPM (WordPress) → MariaDB
                                                 └─ everything else       → the built site, SPA fallback
 ```
@@ -49,9 +49,11 @@ theme) and set its colours to the brand tokens (`#0c0a08` ink, `#ece6da` paper, 
 ## 1. The VPS
 
 - Ubuntu 22.04/24.04, **2 GB RAM minimum** (WooCommerce + MariaDB are heavy on 1 GB), 20 GB disk.
-- The existing web server for `website.taufikandrian.my.id` (nginx or Apache, with its HTTPS
-  certificate) stays as it is. This stack doesn't touch ports 80/443; it listens on
-  `127.0.0.1:8088` only.
+- The front proxy that already serves `website.taufikandrian.my.id` (a Caddy container,
+  `n8n-caddy-1`, holding ports 80/443 and the certificates) stays as it is. This stack joins that
+  container's Docker network (`PROXY_NETWORK`), and the proxy forwards `/sawargi-coffee` to it.
+- Shared VPS: this stack adds roughly 300–500 MB in use (MariaDB is capped at a 64 MB buffer
+  pool). Check `free -h` first: heavy swap use means slow admin pages and stalled commands.
 - Docker with the compose plugin, git and rsync. Node is **not** needed on the VPS: the site is
   built inside a throwaway `node:22` container.
 
@@ -75,24 +77,27 @@ cd deploy && docker compose up -d && cd ..
 ./deploy/build-site.sh                    # builds this site for /sawargi-coffee and publishes it
 ```
 
-Then point the host web server at the stack.
+Then point the front proxy at the stack. Find its network and Caddyfile:
 
-**nginx:** paste `deploy/nginx-sawargi.conf` into the `server { … }` block that has
-`listen 443 ssl` for `website.taufikandrian.my.id`, then run
-`sudo nginx -t && sudo systemctl reload nginx`.
-
-**Apache:** run `sudo a2enmod proxy proxy_http headers`, then add this to the `:443` VirtualHost
-and run `sudo apachectl configtest && sudo systemctl reload apache2`:
-
-```apache
-ProxyPreserveHost On
-RequestHeader set X-Forwarded-Proto "https"
-ProxyPass        /sawargi-coffee http://127.0.0.1:8088/sawargi-coffee
-ProxyPassReverse /sawargi-coffee http://127.0.0.1:8088/sawargi-coffee
+```bash
+docker inspect n8n-caddy-1 --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}'
+docker inspect n8n-caddy-1 --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\n"}}{{end}}'
 ```
 
-Not sure which one you run? `sudo ss -ltnp | grep -E ':(80|443) '` shows the process holding
-the ports.
+Put the network name in `PROXY_NETWORK` in `deploy/.env` and run `docker compose up -d` in `deploy/`.
+Then add the block from `deploy/front-proxy.caddy` to the Caddyfile that the second command shows
+(the one mounted at `/etc/caddy/Caddyfile`), and reload:
+
+```bash
+docker exec n8n-caddy-1 caddy validate --config /etc/caddy/Caddyfile
+docker exec n8n-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+```
+
+Behind nginx or Apache on the host instead, use `deploy/nginx-sawargi.conf` (it proxies to
+`127.0.0.1:8088`). For Apache, run `sudo a2enmod proxy proxy_http headers` and add
+`ProxyPreserveHost On`, `RequestHeader set X-Forwarded-Proto "https"` and
+`ProxyPass /sawargi-coffee http://127.0.0.1:8088/sawargi-coffee` (plus the matching
+`ProxyPassReverse`) to the `:443` VirtualHost.
 
 Check it:
 

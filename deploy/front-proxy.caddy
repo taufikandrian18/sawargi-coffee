@@ -1,0 +1,16 @@
+# For the VPS's front proxy: the n8n-caddy-1 container, which owns ports 80/443.
+# Its Caddyfile is /home/ubuntu/n8n/Caddyfile on the host.
+#
+# Paste the lines between the markers inside the existing `website.taufikandrian.my.id { ... }`
+# block, ABOVE its final catch-all `handle { respond 404 }` (next to the GKA section).
+# Edit with nano, not `sed -i`: the file is bind-mounted, and sed -i swaps in a new file the
+# container never sees. Then:
+#   docker exec n8n-caddy-1 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+#   docker exec n8n-caddy-1 caddy reload   --config /etc/caddy/Caddyfile --adapter caddyfile
+# It reaches this stack over the shared Docker network n8n_default (PROXY_NETWORK in deploy/.env).
+
+	# --- Sawargi Coffee (managed from the sawargi-coffee repo: deploy/front-proxy.caddy) ---
+	handle /sawargi-coffee* {
+		reverse_proxy sawargi-caddy:80
+	}
+	# --- end Sawargi Coffee ---
