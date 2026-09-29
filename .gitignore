@@ -16,3 +16,9 @@ public/media/coffee-bean-cinematic.mp4
 # Session copy of design-skills/ made by the CLAUDE.md setup step
 .claude/skills/
 __pycache__/
+
+# VPS deploy: secrets and the built site copy
+deploy/.env
+deploy/site/*
+!deploy/site/README.md
+deploy/backups/

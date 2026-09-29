@@ -4,8 +4,9 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { copy } from '../../content/copy'
 import type { Batch } from '../../data/shop'
-import { BATCHES, formatRoastDate } from '../../data/shop'
+import { formatRoastDate } from '../../data/shop'
 import { checkoutHref } from '../../lib/batchLink'
+import { useCatalog } from '../../lib/useCatalog'
 import { Link } from '../../lib/router'
 import { useMediaQuery } from '../../lib/useMediaQuery'
 import { ARTICLE } from '../../pages/JournalPage'
@@ -50,12 +51,13 @@ function CreamBand({ children, className = '' }: { children: ReactNode; classNam
  * Tickets here are display-only (no links) because the ticker moves.
  */
 export function ProofBand() {
+  const { catalog } = useCatalog()
   const texts = copy.proof.items.map((item) => (
     <span key={item} className="marquee__text">
       {item}
     </span>
   ))
-  const tickets = BATCHES.map((batch) => (
+  const tickets = catalog.batches.map((batch) => (
     <div key={batch.code} className="w-[min(640px,86vw)]">
       <BatchTicket batch={batch} variant="strip" as="div" />
     </div>
@@ -279,14 +281,21 @@ export function ProcessChapter() {
 
 /** §6.5 The batch (cream): the signature section. */
 export function BatchChapter({ current }: { current?: Batch }) {
+  const state = useCatalog()
+  const { catalog } = state
   return (
     <CreamBand>
       <section id="batch" aria-label={copy.scarcity.eyebrow} data-video-section className="chapter chapter--cream">
         <p className={`${eyebrow} text-ink-mut`}>{copy.scarcity.eyebrow}</p>
         <SplitReveal text={copy.scarcity.title} className={`${chapterTitle} max-w-6xl`} />
         <p className="mt-10 max-w-2xl text-lg leading-8">{copy.scarcity.p1}</p>
+        {state.status !== 'ready' && (
+          <p role="status" className="mt-14 font-plex text-sm uppercase tracking-[0.08em] text-ink-mut md:mt-20">
+            {state.status === 'loading' ? 'Checking stock…' : 'Stock is unavailable right now. Please try again shortly.'}
+          </p>
+        )}
         <div className="batch-grid mt-14 md:mt-20">
-          {BATCHES.map((batch) => (
+          {catalog.batches.map((batch) => (
             <BatchTicket
               key={batch.code}
               batch={batch}

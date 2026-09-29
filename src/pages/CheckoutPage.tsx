@@ -3,21 +3,22 @@ import { useMemo, useState } from 'react'
 import { BatchTicket } from '../components/BatchTicket'
 import { SiteHeader } from '../components/SiteHeader'
 import { InkButton } from '../components/ui/InkButton'
+import type { CatalogBatch } from '../data/catalog'
+import { wooCheckoutUrl } from '../data/catalog'
 import {
-  BATCHES,
   CURRENCIES,
   FREE_SHIPPING_MIN_BAGS,
   GRINDS,
   PAYMENT_METHODS,
-  PRODUCT,
   RATES_AS_OF,
   SHIPPING,
-  calcTotals,
+  PRODUCT,
   formatMoney,
   maxQuantityFor
 } from '../data/shop'
 import type { Batch, CurrencyCode, GrindId, PaymentId, ShippingId } from '../data/shop'
 import { initialBatchCode } from '../lib/batchLink'
+import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/router'
 
 type Contact = {
@@ -68,14 +69,22 @@ function makeOrderId() {
 }
 
 type CheckoutPageProps = {
-  /** Simulated payment latency. Tests pass 0. */
+  /** Simulated payment latency (demo mode). Tests pass 0. */
   processingDelayMs?: number
+  /** Leaves for the WooCommerce checkout. Injected in tests. */
+  redirect?: (url: string) => void
 }
 
-export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
-  const firstAvailable = BATCHES.find((b) => b.bagsLeft > 0) ?? BATCHES[0]
+const leaveForStore = (url: string) => window.location.assign(url)
 
-  const [batchCode, setBatchCode] = useState(() => initialBatchCode())
+export function CheckoutPage({ processingDelayMs = 1200, redirect = leaveForStore }: CheckoutPageProps) {
+  const catalogState = useCatalog()
+  const { catalog } = catalogState
+  const { product, batches } = catalog
+  // WooCommerce mode: delivery and payment happen on the store's own checkout page.
+  const handOff = catalog.source === 'woocommerce'
+
+  const [chosenCode, setBatchCode] = useState<string | undefined>(undefined)
   const [grind, setGrind] = useState<GrindId>('whole')
   const [quantity, setQuantity] = useState(1)
   const [currency, setCurrency] = useState<CurrencyCode>('IDR')
@@ -86,12 +95,23 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
   const [status, setStatus] = useState<'form' | 'processing' | 'done'>('form')
   const [order, setOrder] = useState<PlacedOrder | null>(null)
 
-  const batch = BATCHES.find((b) => b.code === batchCode) ?? firstAvailable
-  const maxQty = maxQuantityFor(batch)
-  const totals = useMemo(() => calcTotals(quantity, shipping), [quantity, shipping])
+  // The batch comes from ?batch= until the visitor picks one; this also covers a store that loads late.
+  const batchCode = chosenCode ?? initialBatchCode(batches)
+  const batch = batches.find((b) => b.code === batchCode)
+  const maxQty = batch ? maxQuantityFor(batch) : 1
+  const grindOptions = batch?.grinds ?? []
+  const activeGrind = grindOptions.find((g) => g.id === grind) ?? grindOptions[0]
+  const totals = useMemo(() => {
+    const subtotal = (batch?.priceIdr ?? product.priceIdr) * quantity
+    if (handOff) return { subtotal, shipping: 0, freeShipping: false, total: subtotal }
+    const option = SHIPPING.find((s) => s.id === shipping) ?? SHIPPING[0]
+    const freeShipping = option.id === 'regular' && quantity >= FREE_SHIPPING_MIN_BAGS
+    const shippingCost = freeShipping ? 0 : option.costIdr
+    return { subtotal, shipping: shippingCost, freeShipping, total: subtotal + shippingCost }
+  }, [batch, product.priceIdr, quantity, shipping, handOff])
   const money = (idr: number) => formatMoney(idr, currency)
 
-  const selectBatch = (next: Batch) => {
+  const selectBatch = (next: CatalogBatch) => {
     if (next.bagsLeft === 0) return
     setBatchCode(next.code)
     setQuantity((q) => Math.min(q, maxQuantityFor(next)))
@@ -104,7 +124,15 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
-    if (status === 'processing') return
+    if (status === 'processing' || !batch) return
+
+    if (handOff) {
+      if (!catalog.storeUrl || !activeGrind?.variationId) return
+      setStatus('processing')
+      redirect(wooCheckoutUrl(catalog.storeUrl, activeGrind.variationId, quantity))
+      return
+    }
+
     const found = validateContact(contact)
     setErrors(found)
     const firstField = Object.keys(found)[0]
@@ -117,7 +145,7 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
     const placed: PlacedOrder = {
       id: makeOrderId(),
       batch,
-      grind,
+      grind: activeGrind?.id ?? grind,
       quantity,
       payment,
       totalIdr: totals.total,
@@ -147,9 +175,24 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
     <div className="min-h-screen bg-ink text-paper">
       <SiteHeader current="checkout" />
 
-      <div className="border-b border-amber-200/20 bg-amber-200/[0.06] px-4 py-2.5 text-center text-xs tracking-wide text-amber-100/90">
-        Demo checkout — no payment is taken and no order is shipped.
-      </div>
+      {!handOff && (
+        <div className="border-b border-amber-200/20 bg-amber-200/[0.06] px-4 py-2.5 text-center text-xs tracking-wide text-amber-100/90">
+          Demo checkout — no payment is taken and no order is shipped.
+        </div>
+      )}
+
+      {!batch ? (
+        <main className="mx-auto max-w-3xl px-4 py-24 md:px-8">
+          <h1 className="display-chapter">{product.name}</h1>
+          <p role="status" className="mt-8 font-plex text-sm uppercase tracking-[0.08em] text-paper-mut">
+            {catalogState.status === 'loading'
+              ? 'Checking stock…'
+              : catalogState.status === 'error'
+                ? 'Stock is unavailable right now. Please try again shortly.'
+                : 'No batches are on sale right now.'}
+          </p>
+        </main>
+      ) : (
 
       <form
         noValidate
@@ -163,17 +206,17 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
               one coffee, many batches
             </p>
             <h1 className="display-chapter mt-3">
-              {PRODUCT.name}
+              {product.name}
             </h1>
             <p className="mt-4 max-w-xl text-paper/70">
-              {PRODUCT.origin} · {PRODUCT.process} · {PRODUCT.sizeLabel} bag ·{' '}
-              <span className="text-paper">{money(PRODUCT.priceIdr)}</span>
+              {product.origin} · {product.process} · {product.sizeLabel} bag ·{' '}
+              <span className="text-paper">{money(batch.priceIdr)}</span>
             </p>
           </div>
 
           <Step number="01" title="Choose your batch">
             <div role="radiogroup" aria-label="batch" className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {BATCHES.map((b) => {
+              {batches.map((b) => {
                 const soldOut = b.bagsLeft === 0
                 const selected = b.code === batch.code
                 return (
@@ -201,11 +244,11 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
 
           <Step number="02" title="Grind & quantity">
             <div role="radiogroup" aria-label="grind" className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              {GRINDS.map((g) => (
+              {grindOptions.map((g) => (
                 <ChoiceCard
                   key={g.id}
                   name="grind"
-                  checked={grind === g.id}
+                  checked={activeGrind?.id === g.id}
                   onChange={() => setGrind(g.id)}
                   title={g.label}
                   hint={g.hint}
@@ -252,6 +295,8 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
             </div>
           </Step>
 
+          {!handOff && (
+          <>
           <Step number="03" title="Delivery">
             <div className="grid gap-4 md:grid-cols-2">
               <Field id="name" label="Full name" error={errors.name}>
@@ -352,6 +397,8 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
               Demo mode: you'll see simulated payment instructions after placing the order.
             </p>
           </Step>
+          </>
+          )}
         </div>
 
         <aside aria-label="order summary" className="lg:sticky lg:top-24 lg:self-start">
@@ -377,16 +424,19 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
 
             <div className="mt-6 border-t border-char/15 pt-5 text-sm">
               <p className="font-medium">
-                {PRODUCT.name} · {PRODUCT.sizeLabel}
+                {product.name} · {product.sizeLabel}
               </p>
               <p className="mt-1 font-plex text-ink-mut">
-                Batch {batch.code} · {GRINDS.find((g) => g.id === grind)?.label}
+                Batch {batch.code} · {activeGrind?.label}
               </p>
             </div>
 
             <dl className="mt-5 space-y-2.5 border-t border-char/15 pt-5 text-sm">
-              <Row label={`${quantity} × ${money(PRODUCT.priceIdr)}`} value={money(totals.subtotal)} />
-              <Row label="Shipping" value={totals.freeShipping ? 'Free' : money(totals.shipping)} />
+              <Row label={`${quantity} × ${money(batch.priceIdr)}`} value={money(totals.subtotal)} />
+              <Row
+                label="Shipping"
+                value={handOff ? 'At checkout' : totals.freeShipping ? 'Free' : money(totals.shipping)}
+              />
               <div className="flex items-baseline justify-between border-t border-char/15 pt-4 text-base">
                 <dt>Total</dt>
                 <dd data-testid="order-total" className="font-plex text-2xl font-medium tabular-nums">
@@ -403,12 +453,24 @@ export function CheckoutPage({ processingDelayMs = 1200 }: CheckoutPageProps) {
             )}
 
             <InkButton type="submit" variant="cherry" disabled={status === 'processing'} className="mt-6 w-full">
-              {status === 'processing' ? 'Processing…' : `Place order · ${money(totals.total)}`}
+              {status === 'processing'
+                ? handOff
+                  ? 'Opening secure checkout…'
+                  : 'Processing…'
+                : handOff
+                  ? `Continue to payment · ${money(totals.total)}`
+                  : `Place order · ${money(totals.total)}`}
             </InkButton>
+            {handOff && (
+              <p className="mt-4 text-center text-xs leading-5 text-ink-mut">
+                Delivery details, shipping and payment are completed on our secure checkout.
+              </p>
+            )}
             <p className="mt-4 text-center text-xs text-ink-mut">Small batch. Every bag dated and numbered.</p>
           </div>
         </aside>
       </form>
+      )}
     </div>
   )
 }

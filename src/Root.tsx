@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import App from './App'
 import { CursorDot } from './components/ui/CursorDot'
 import { Grain } from './components/ui/Grain'
+import { CatalogProvider } from './lib/catalog'
 import { usePathname } from './lib/router'
 import { useSmoothScroll } from './lib/smoothScroll'
 import { CheckoutPage } from './pages/CheckoutPage'
@@ -30,10 +31,10 @@ export function Root() {
   useSmoothScroll()
 
   return (
-    <>
+    <CatalogProvider>
       <Page pathname={pathname} />
       <Grain />
       <CursorDot />
-    </>
+    </CatalogProvider>
   )
 }

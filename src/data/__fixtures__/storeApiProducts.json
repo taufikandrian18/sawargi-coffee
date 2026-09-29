@@ -1,0 +1,59 @@
+[
+  {
+    "id": 101,
+    "name": "Ciwidey Natural · SWG-CN-015",
+    "sku": "SWG-CN-015",
+    "is_in_stock": true,
+    "prices": { "price": "165000", "regular_price": "165000", "sale_price": "165000", "currency_code": "IDR", "currency_minor_unit": 0 },
+    "variations": [
+      { "id": 1011, "attributes": [{ "name": "Grind", "value": "whole-bean" }] },
+      { "id": 1012, "attributes": [{ "name": "Grind", "value": "coarse" }] },
+      { "id": 1013, "attributes": [{ "name": "Grind", "value": "medium" }] },
+      { "id": 1014, "attributes": [{ "name": "Grind", "value": "fine" }] }
+    ],
+    "extensions": {
+      "sawargi": {
+        "batch_code": "SWG-CN-015",
+        "roast_date": "2026-10-02",
+        "harvest": "2026 main crop",
+        "cup_score": "86",
+        "tasting_notes": ["jackfruit", "palm sugar", "cacao nib"],
+        "bags_total": 60,
+        "bags_left": 41,
+        "origin": "Ciwidey, West Java",
+        "process": "Natural (dried in the cherry)",
+        "size_label": "1 kg"
+      }
+    }
+  },
+  {
+    "id": 100,
+    "name": "Ciwidey Natural · SWG-CN-014",
+    "sku": "SWG-CN-014",
+    "is_in_stock": false,
+    "prices": { "price": "150000", "regular_price": "150000", "sale_price": "150000", "currency_code": "IDR", "currency_minor_unit": 0 },
+    "variations": [
+      { "id": 1001, "attributes": [{ "name": "Grind", "value": "whole-bean" }] }
+    ],
+    "extensions": {
+      "sawargi": {
+        "batch_code": "SWG-CN-014",
+        "roast_date": "2026-09-24",
+        "harvest": "2026 main crop",
+        "cup_score": 85.5,
+        "tasting_notes": ["red grape"],
+        "bags_total": 60,
+        "bags_left": 0
+      }
+    }
+  },
+  {
+    "id": 55,
+    "name": "Gift card",
+    "sku": "GIFT",
+    "is_in_stock": true,
+    "prices": { "price": "100000", "regular_price": "100000", "sale_price": "100000", "currency_code": "IDR", "currency_minor_unit": 0 },
+    "variations": [],
+    "extensions": {}
+  }
+]

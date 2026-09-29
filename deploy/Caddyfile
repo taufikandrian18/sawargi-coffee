@@ -1,0 +1,50 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# The designed site (static build of this repo, copied into deploy/site).
+{$SITE_DOMAIN}, www.{$SITE_DOMAIN} {
+	@www host www.{$SITE_DOMAIN}
+	redir @www https://{$SITE_DOMAIN}{uri} permanent
+
+	root * /srv/site
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	# Hashed build assets never change; media changes rarely; index.html always revalidates.
+	@hashed path /assets/*
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+	@media path /media/* /brand/*
+	header @media Cache-Control "public, max-age=604800"
+	@html path / /index.html
+	header @html Cache-Control "no-cache"
+
+	# SPA fallback: /checkout, /journal/... serve index.html. file_server honours
+	# Range requests, which the scroll-scrubbed video needs.
+	try_files {path} /index.html
+	file_server
+}
+
+# WordPress + WooCommerce: admin, cart, checkout and payment plugins.
+{$SHOP_DOMAIN} {
+	root * /var/www/html
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+
+	# Common attack surface WordPress doesn't need here.
+	@blocked path /xmlrpc.php /wp-config.php /readme.html /license.txt /wp-content/uploads/*.php
+	respond @blocked 404
+
+	php_fastcgi wordpress:9000
+	file_server
+}
