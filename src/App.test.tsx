@@ -1,153 +1,153 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import App from './App'
+import { BATCHES } from './data/shop'
 
-describe('cinematic hero foreground', () => {
-  it('renders the black and white sawargi hero and navigation anchors', () => {
+// Behaviour tests for the home page (BRIEF G7). Copy is pinned separately in content/copy.test.tsx.
+
+describe('home page', () => {
+  it('renders the logo and the primary navigation with working targets', () => {
     render(<App />)
+    const nav = screen.getByRole('navigation', { name: 'primary' })
 
-    const homeLink = screen.getByRole('link', { name: 'sawargi home' })
-    expect(homeLink).toHaveAttribute('href', '#top')
-    expect(homeLink).not.toHaveClass('rounded-full')
-    expect(homeLink).not.toHaveClass('bg-neutral-900/90')
-    expect(screen.getByTestId('sawargi-logo')).toHaveClass('sawargi-composite-logo')
-    expect(screen.getByTestId('sawargi-logo-mark')).toHaveAttribute(
-      'src',
-      '/brand/sawargi-mark-white-cropped.png'
-    )
+    expect(within(nav).getByRole('link', { name: 'sawargi home' })).toHaveAttribute('href', '#top')
+    expect(screen.getByTestId('sawargi-logo-mark')).toHaveAttribute('src', '/brand/sawargi-mark-white-cropped.png')
     expect(screen.getByTestId('sawargi-logo-wordmark')).toHaveAttribute(
       'src',
       '/brand/sawargi-wordmark-white-cropped.png'
     )
-    expect(screen.getByRole('link', { name: 'story' })).toHaveAttribute('href', '#story')
-    expect(screen.getByRole('link', { name: 'one roast' })).toHaveAttribute('href', '#why-one')
-    expect(screen.getByRole('link', { name: 'process' })).toHaveAttribute('href', '#process')
-    expect(screen.getByRole('link', { name: 'order' })).toHaveAttribute('href', '#order')
-    expect(screen.getByRole('link', { name: 'journal' })).toHaveAttribute('href', '/journal')
-    expect(screen.getByRole('link', { name: 'Buy Now' })).toHaveAttribute(
-      'href',
-      '/checkout'
-    )
-    expect(screen.getByRole('link', { name: 'Order This Batch' })).toHaveAttribute(
-      'href',
-      '/checkout'
-    )
-
-    const quietlyWord = screen.getByTestId('hero-word-quietly')
-    const neverWord = screen.getByTestId('hero-word-never')
-
-    expect(quietlyWord).toHaveTextContent('Quietly Roasted')
-    expect(quietlyWord).toHaveAttribute('data-parallax-object', 'hero-word')
-    expect(quietlyWord).toHaveAttribute('data-scroll-exit', 'left')
-    expect(quietlyWord).toHaveClass('top-[40%]')
-    expect(screen.getByTestId('hero-word-quietly-thin')).toHaveClass('hero-word-ultra-thin')
-    expect(screen.getByTestId('hero-word-roasted-bold')).toHaveClass('font-medium')
-    expect(neverWord).toHaveTextContent('Never Rushed')
-    expect(neverWord).toHaveAttribute('data-parallax-object', 'hero-word')
-    expect(neverWord).toHaveAttribute('data-scroll-exit', 'right')
-    expect(neverWord).toHaveClass('whitespace-nowrap')
-    expect(neverWord).toHaveClass('top-[90%]')
-    expect(neverWord).toHaveClass('hero-word-never-offset')
-    expect(screen.getByTestId('hero-word-never-thin')).toHaveClass('hero-word-ultra-thin')
-    expect(screen.getByTestId('hero-word-rushed-bold')).toHaveClass('font-medium')
-    expect(screen.queryByTestId('hero-word-rushed')).not.toBeInTheDocument()
-    expect(document.querySelectorAll('[data-parallax-object="hero-word"]')).toHaveLength(2)
-    expect(screen.queryByTestId('hero-word-layer')).not.toBeInTheDocument()
-    expect(document.querySelector('video')).toHaveAttribute(
-      'src',
-      '/media/scrub/coffee-scrub-1080.mp4'
-    )
-
-    expect(
-      screen.queryByText("we haven't changed how we roast since 2019. we're not starting now")
-    ).not.toBeInTheDocument()
-    expect(screen.queryByText('+65k')).not.toBeInTheDocument()
-    expect(screen.queryByText('rooted in tradition')).not.toBeInTheDocument()
-    expect(screen.queryByText('+1.5b')).not.toBeInTheDocument()
-    expect(screen.queryByText('gb data was protected')).not.toBeInTheDocument()
-    expect(screen.queryByText('+300k')).not.toBeInTheDocument()
-
-    expect(screen.queryByText(/securify/i)).not.toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'story' })).toHaveAttribute('href', '#story')
+    expect(within(nav).getByRole('link', { name: 'one roast' })).toHaveAttribute('href', '#why-one')
+    expect(within(nav).getByRole('link', { name: 'process' })).toHaveAttribute('href', '#process')
+    expect(within(nav).getByRole('link', { name: 'order' })).toHaveAttribute('href', '#order')
+    expect(within(nav).getByRole('link', { name: 'journal' })).toHaveAttribute('href', '/journal')
+    expect(within(nav).getByRole('link', { name: 'Buy Now' })).toHaveAttribute('href', '/checkout')
+    expect(screen.getByTestId('scroll-progress')).toBeInTheDocument()
   })
 
-  it('keeps the persistent navigation above scrolled content so links stay clickable', () => {
+  it('keeps the nav fixed above the content layer, outside the hero', () => {
     render(<App />)
+    const nav = screen.getByRole('navigation', { name: 'primary' })
 
-    const navigation = screen.getByRole('navigation')
-
-    expect(navigation).toHaveClass('fixed')
-    expect(navigation).toHaveClass('z-50')
-    expect(screen.getByTestId('hero-section')).not.toContainElement(navigation)
+    expect(nav).toHaveClass('fixed', 'z-50')
+    expect(screen.getByTestId('hero-section')).not.toContainElement(nav)
     expect(screen.getByTestId('story-sections-layer')).toHaveClass('z-20')
   })
 
-  it('renders the story, quality, proof, scarcity, and call-to-action sections', () => {
+  it('opens the hero with the thesis, the parting exit hooks and the current batch', () => {
     render(<App />)
+    const hero = screen.getByTestId('hero-section')
 
-    expect(screen.getByRole('region', { name: 'our story' })).toHaveAttribute('id', 'story')
-    expect(screen.getByRole('region', { name: 'why just one' })).toHaveAttribute('id', 'why-one')
-    expect(screen.getByRole('region', { name: "tasted before it's trusted" })).toHaveAttribute(
-      'id',
-      'process'
-    )
-    expect(screen.getByRole('region', { name: 'clean hands, careful process' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'proof, not promises' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'the scarcity angle' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'bring the table back' })).toHaveAttribute(
-      'id',
-      'order'
-    )
+    expect(within(hero).getByRole('heading', { level: 1, name: 'Quietly Roasted' })).toBeInTheDocument()
+    expect(screen.getByTestId('hero-word-quietly')).toHaveAttribute('data-scroll-exit', 'left')
+    expect(screen.getByTestId('hero-word-never')).toHaveAttribute('data-scroll-exit', 'right')
+    expect(screen.getByTestId('hero-word-never')).toHaveTextContent('Never Rushed')
+    expect(document.querySelectorAll('[data-parallax-object="hero-word"]')).toHaveLength(2)
 
-    expect(screen.getByText('Born When the Cafes Went Quiet')).toBeInTheDocument()
-    expect(
-      screen.getByText(/coffee in Bandung wasn't something you drank alone/i)
-    ).toBeInTheDocument()
-    expect(screen.getByText(/Every harvest. Every roast. Every bag./i)).toBeInTheDocument()
-    expect(screen.getByText(/Every batch cupped. Every batch scored./i)).toBeInTheDocument()
-    expect(screen.getByText(/Roast date printed on every bag/i)).toBeInTheDocument()
-    expect(screen.getByText(/When this batch sells out/i)).toBeInTheDocument()
-    expect(screen.getByText(/Small batch. Fully traceable./i)).toBeInTheDocument()
+    const current = BATCHES.find((b) => b.bagsLeft > 0)!
+    const strip = within(hero).getByRole('article', { name: `Batch ${current.code}` })
+    expect(within(strip).getByRole('link', { name: 'Order This Batch' })).toHaveAttribute('href', '/checkout')
+    expect(within(hero).getByTestId('bean-drift')).toHaveAttribute('aria-hidden', 'true')
   })
 
-  it('keeps the new content sections transparent so the fixed video remains visible behind them', () => {
+  it('keeps the scroll-scrubbed video behind the page', () => {
     render(<App />)
 
-    expect(screen.getByTestId('story-sections-layer')).toHaveClass('bg-transparent')
-    expect(screen.getByTestId('story-sections-layer')).not.toHaveClass('bg-black')
-    expect(screen.getByText('Roast date printed on every bag').closest('li')).toHaveClass(
-      'bg-black/[0.46]'
-    )
-  })
-
-  it('adds stable readability layers for text over the HLS video', () => {
-    render(<App />)
-
-    expect(screen.getByTestId('video-readability-scrim')).toHaveClass('video-readability-scrim')
-    expect(screen.getByTestId('hero-word-quietly')).toHaveClass('readable-heading')
-    expect(screen.getByRole('region', { name: 'our story' })).toHaveClass('content-readability')
-    expect(screen.getByText(/coffee in Bandung wasn't something you drank alone/i).closest('div')).toHaveClass(
-      'copy-scrim'
-    )
-    expect(screen.getByText(/The pandemic took the cup we used to share with friends/i)).toHaveClass(
-      'copy-scrim'
-    )
-  })
-
-  it('marks each major viewport as a video scroll section', () => {
-    render(<App />)
-
-    const panels = document.querySelectorAll('[data-video-section]')
-
-    expect(panels).toHaveLength(8)
+    expect(document.querySelector('video')).toHaveAttribute('src', '/media/scrub/coffee-scrub-1080.mp4')
+    expect(screen.getByTestId('video-readability-scrim')).toHaveAttribute('aria-hidden', 'true')
+    expect(document.querySelectorAll('[data-video-section]').length).toBeGreaterThanOrEqual(6)
     expect(screen.getByTestId('hero-section')).toHaveAttribute('data-section-panel', 'hero')
-    expect(screen.getByRole('region', { name: 'our story' })).toHaveAttribute(
-      'data-section-panel',
-      'content'
-    )
-    expect(screen.getByRole('region', { name: 'proof, not promises' })).toHaveClass(
-      'min-h-[100svh]'
-    )
-    expect(screen.getByRole('region', { name: 'bring the table back' })).toHaveClass(
-      'min-h-[100svh]'
-    )
+  })
+
+  it('lays the chapters out in the BRIEF §6 order', () => {
+    render(<App />)
+    const order = ['our story', 'why just one', "tasted before it's trusted", 'the scarcity angle', 'journal', 'bring the table back']
+    const regions = order.map((name) => screen.getByRole('region', { name }))
+
+    regions.slice(1).forEach((region, index) => {
+      expect(regions[index].compareDocumentPosition(region) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+    expect(regions[0]).toHaveAttribute('id', 'story')
+    expect(regions[1]).toHaveAttribute('id', 'why-one')
+    expect(regions[2]).toHaveAttribute('id', 'process')
+    expect(regions[3]).toHaveAttribute('id', 'batch')
+    expect(regions[5]).toHaveAttribute('id', 'order')
+  })
+
+  it('never links to a dead anchor, and every CTA goes to checkout or the batch', () => {
+    render(<App />)
+
+    for (const link of document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')) {
+      expect(document.querySelector(link.getAttribute('href')!), link.outerHTML).not.toBeNull()
+    }
+    for (const link of screen.getAllByRole('link', { name: 'Order This Batch' })) {
+      expect(link).toHaveAttribute('href', '/checkout')
+    }
+    const miniCtas = screen.getAllByRole('link', { name: 'Choose a batch' })
+    expect(miniCtas).toHaveLength(3)
+    miniCtas.forEach((link) => expect(link).toHaveAttribute('href', '#batch'))
+  })
+
+  it('numbers the process steps and shows a still for each', () => {
+    render(<App />)
+    const process = screen.getByRole('region', { name: "tasted before it's trusted" })
+    const steps = within(process).getAllByRole('listitem').filter((li) => li.classList.contains('process-step'))
+
+    expect(steps.map((step) => step.querySelector('.process-step__number')?.textContent)).toEqual(['01', '02', '03'])
+    const stills = process.querySelectorAll('img')
+    expect([...stills].map((img) => img.getAttribute('src'))).toEqual([
+      '/media/stills/step-1.webp',
+      '/media/stills/step-2.webp',
+      '/media/stills/step-3.webp'
+    ])
+    stills.forEach((img) => expect(img).toHaveAttribute('alt', ''))
+  })
+
+  it('shows every batch as a ticket and sends the journal teaser to the article', () => {
+    render(<App />)
+    const batchSection = screen.getByRole('region', { name: 'the scarcity angle' })
+
+    for (const batch of BATCHES) {
+      expect(within(batchSection).getByRole('article', { name: `Batch ${batch.code}` })).toBeInTheDocument()
+    }
+    expect(
+      within(screen.getByRole('region', { name: 'journal' })).getByRole('link', { name: /Dried in the Fruit/ })
+    ).toHaveAttribute('href', '/journal/ciwidey-natural')
+  })
+
+  it('does not ship leftover template copy', () => {
+    render(<App />)
+
+    for (const text of [/we haven't changed how we roast since 2019/i, /\+65k/, /rooted in tradition/i, /\+1\.5b/, /gb data was protected/i, /\+300k/, /securify/i]) {
+      expect(screen.queryByText(text)).not.toBeInTheDocument()
+    }
+  })
+})
+
+describe('mobile menu', () => {
+  it('traps focus, closes on Escape and returns focus to the menu button', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const button = screen.getByRole('button', { name: 'menu' })
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(button)
+    const dialog = screen.getByRole('dialog', { name: 'menu' })
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+    const focusable = within(dialog).getAllByRole('link').concat(within(dialog).getAllByRole('button'))
+    expect(dialog).toContainElement(document.activeElement as HTMLElement)
+    expect(focusable.length).toBeGreaterThan(1)
+
+    // Tab past the last control wraps to the first.
+    const items = Array.from(dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'))
+    act(() => items[items.length - 1].focus())
+    await user.tab()
+    expect(document.activeElement).toBe(items[0])
+    await user.tab({ shift: true })
+    expect(document.activeElement).toBe(items[items.length - 1])
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: 'menu' })).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(button)
   })
 })

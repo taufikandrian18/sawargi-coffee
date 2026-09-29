@@ -12,13 +12,13 @@ const config: Config = {
       },
       // Redesign tokens (BRIEF §4); values live in src/styles/tokens.css.
       colors: {
-        ink: 'var(--ink)',
-        char: 'var(--char)',
-        panel: 'var(--panel)',
-        paper: 'var(--paper)',
-        'paper-mut': 'var(--paper-mut)',
-        'ink-mut': 'var(--ink-mut)',
-        cherry: 'var(--cherry)'
+        ink: 'rgb(var(--ink-rgb) / <alpha-value>)',
+        char: 'rgb(var(--char-rgb) / <alpha-value>)',
+        panel: 'rgb(var(--panel-rgb) / <alpha-value>)',
+        paper: 'rgb(var(--paper-rgb) / <alpha-value>)',
+        'paper-mut': 'rgb(var(--paper-mut-rgb) / <alpha-value>)',
+        'ink-mut': 'rgb(var(--ink-mut-rgb) / <alpha-value>)',
+        cherry: 'rgb(var(--cherry-rgb) / <alpha-value>)'
       },
       borderRadius: {
         card: 'var(--radius-card)'

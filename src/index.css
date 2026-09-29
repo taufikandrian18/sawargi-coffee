@@ -6,8 +6,10 @@
 @tailwind utilities;
 
 @layer base {
+  /* No scroll-behavior: smooth here. Lenis smooths on desktop, and ScrollTrigger copies a
+     smooth root value back inline after every refresh, which made native scrolls
+     (keyboard, focus, anchors) glide twice under Lenis. */
   html {
-    scroll-behavior: smooth;
     height: 100%;
     background: #000;
   }
@@ -54,31 +56,6 @@
       radial-gradient(circle at 50% 24%, rgb(0 0 0 / 0.056) 0%, rgb(0 0 0 / 0.322) 68%),
       linear-gradient(90deg, rgb(0 0 0 / 0.532) 0%, rgb(0 0 0 / 0.28) 42%, rgb(0 0 0 / 0.462) 100%),
       linear-gradient(180deg, rgb(0 0 0 / 0.112) 0%, rgb(0 0 0 / 0.252) 52%, rgb(0 0 0 / 0.574) 100%);
-  }
-
-  .content-readability {
-    position: relative;
-    isolation: isolate;
-  }
-
-  .content-readability::before {
-    position: absolute;
-    inset: 0 max(-2.5rem, calc((100vw - 80rem) / -2));
-    z-index: -1;
-    content: '';
-    pointer-events: none;
-    background:
-      linear-gradient(180deg, rgb(0 0 0 / 0.126) 0%, rgb(0 0 0 / 0.392) 28%, rgb(0 0 0 / 0.42) 74%, rgb(0 0 0 / 0.154) 100%),
-      linear-gradient(90deg, rgb(0 0 0 / 0.448) 0%, rgb(0 0 0 / 0.238) 48%, rgb(0 0 0 / 0.35) 100%);
-  }
-
-  .copy-scrim {
-    border-left: 1px solid rgb(255 255 255 / 0.26);
-    padding: clamp(1.25rem, 2vw, 2rem);
-    background: linear-gradient(90deg, rgb(0 0 0 / 0.504), rgb(0 0 0 / 0.336) 72%, rgb(0 0 0 / 0.182));
-    box-shadow: -28px 0 96px rgb(0 0 0 / 0.364);
-    text-shadow: 0 1px 2px rgb(0 0 0 / 0.9), 0 12px 32px rgb(0 0 0 / 0.62);
-    backdrop-filter: blur(8px) saturate(115%);
   }
 
   .readable-heading {
@@ -572,20 +549,337 @@
   }
 }
 
-@layer utilities {
-  .hero-title {
-    letter-spacing: -0.04em;
+/* ---- Home page layout (BRIEF §6). ---- */
+@layer components {
+  /* Display type: Big Shoulders Display, uppercase, tight leading (BRIEF §4). */
+  .display-hero,
+  .display-chapter,
+  .display-step,
+  .display-climax {
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .display-hero {
+    font-size: clamp(4rem, 13vw, 13rem);
+  }
+
+  .display-chapter {
+    font-size: clamp(3.5rem, 9vw, 9rem);
+  }
+
+  .display-step {
+    font-size: clamp(2.5rem, 5vw, 4.75rem);
+    line-height: 0.92;
+  }
+
+  .display-climax {
+    font-size: clamp(4rem, 12vw, 12rem);
+  }
+
+  .chapter {
+    position: relative;
+    padding: clamp(96px, 12vw, 160px) clamp(16px, 3vw, 40px);
+  }
+
+  .chapter--cream {
+    padding-block: clamp(80px, 10vw, 140px);
+  }
+
+  /* Body copy that sits straight on the video. */
+  .on-video {
+    color: var(--paper);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.9), 0 8px 28px rgb(0 0 0 / 0.7);
+  }
+
+  /* Proof band */
+  .proof-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 40px;
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .proof-row li {
+    display: inline-flex;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .proof-row li + li::before {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: var(--cherry);
+    content: '';
+  }
+
+  /* Paper cards (BRIEF §3) */
+  .story-track {
+    display: grid;
+    gap: 32px;
+  }
+
+  .paper-card {
+    border-radius: var(--radius-card);
+    background: var(--paper);
+    padding: 40px 32px 48px;
+    color: var(--char);
+    filter: drop-shadow(8px 8px 0 var(--char));
+  }
+
+  .paper-card__label {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3vw, 2.75rem);
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--cherry);
+  }
+
+  .paper-card--link {
+    cursor: pointer;
+    transition:
+      translate var(--dur-hover) var(--ease-card),
+      filter var(--dur-hover) var(--ease-card);
+  }
+
+  .paper-card--link .paper-card__label {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--ink-mut);
+  }
+
+  .paper-card--link:hover {
+    translate: -2px -2px;
+    filter: drop-shadow(10px 10px 0 var(--char));
+  }
+
+  .paper-card--link:focus-visible {
+    outline: 2px solid var(--paper);
+    outline-offset: 6px;
+  }
+
+  /* Chapter II pull quote */
+  .pull-quote {
+    font-family: var(--font-display);
+    font-size: clamp(2.25rem, 4.2vw, 3.75rem);
+    font-weight: 800;
     line-height: 0.95;
+    text-transform: uppercase;
   }
 
-  .hero-word-ultra-thin {
-    font-weight: 100;
-    opacity: 0.9;
-    text-shadow: 0 1px 6px rgb(0 0 0 / 0.82), 0 12px 42px rgb(0 0 0 / 0.62);
+  .pull-quote > span:last-child {
+    display: block;
+    margin-top: 20px;
+    font-family: var(--font-body);
+    font-size: 1.125rem;
+    font-weight: 400;
+    line-height: 1.6;
+    text-transform: none;
+    color: var(--ink-mut);
   }
 
-  .hero-word-never-offset {
-    margin-top: calc(-1 * clamp(4.5rem, 10vw, 9rem));
+  /* Chapter III process steps */
+  .process-step {
+    display: grid;
+    align-items: center;
+    gap: 40px;
+    padding-block: clamp(48px, 7vw, 96px);
+    border-top: 1px solid rgb(236 230 218 / 0.16);
+  }
+
+  .process-step:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .process-step__number {
+    font-family: var(--font-mono);
+    font-size: clamp(2.5rem, 4vw, 3.5rem);
+    font-weight: 500;
+    line-height: 1;
+    color: var(--cherry);
+  }
+
+  .process-step__pull {
+    margin-top: 32px;
+    border-left: 2px solid var(--cherry);
+    padding-left: 20px;
+    font-size: 1.25rem;
+    line-height: 1.6;
+  }
+
+  .proof-list {
+    margin-top: 32px;
+    max-width: 36rem;
+  }
+
+  .proof-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    border-top: 1px solid rgb(236 230 218 / 0.22);
+    padding-block: 16px;
+    font-size: 1.0625rem;
+    color: var(--paper);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.9), 0 8px 28px rgb(0 0 0 / 0.7);
+  }
+
+  .proof-list li::before {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    translate: 0 -2px;
+    background: var(--cherry);
+    content: '';
+  }
+
+  /* An original soft, lopsided frame for the stills. */
+  .process-step__media {
+    width: 100%;
+    max-width: 440px;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 46% 54% 40% 60% / 34% 38% 62% 66%;
+    background: var(--panel);
+  }
+
+  .process-step__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .batch-grid {
+    display: grid;
+    gap: 32px;
+  }
+
+  /* Nav */
+  .nav-link {
+    border-radius: 9999px;
+    padding: 8px 20px;
+    font-size: 0.875rem;
+    color: var(--paper-mut);
+    transition: color var(--dur-hover) ease-out;
+  }
+
+  .nav-link:hover {
+    color: var(--paper);
+  }
+
+  .nav-link:focus-visible,
+  .nav-focus:focus-visible,
+  .mobile-menu__link:focus-visible,
+  .footer-link:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
+
+  .nav-progress {
+    position: absolute;
+    right: 24px;
+    bottom: 3px;
+    left: 24px;
+    height: 2px;
+    overflow: hidden;
+    border-radius: 9999px;
+  }
+
+  .nav-progress > span {
+    display: block;
+    height: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+    background: var(--cherry);
+  }
+
+  .ink-btn--small {
+    min-height: 44px;
+    padding: 0 20px;
+    font-size: 0.8125rem;
+  }
+
+  .mobile-menu__link {
+    display: block;
+    padding-block: 6px;
+    font-family: var(--font-display);
+    font-size: clamp(2.75rem, 13vw, 4rem);
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .footer-link {
+    text-decoration: underline;
+    text-decoration-color: rgb(27 23 20 / 0.3);
+    text-underline-offset: 5px;
+    transition: text-decoration-color var(--dur-hover) ease-out;
+  }
+
+  .footer-link:hover {
+    text-decoration-color: var(--char);
+  }
+
+  /* BeanDrift */
+  .bean-drift {
+    position: absolute;
+    rotate: var(--bean-rotate, 0deg);
+    animation: bean-pop 7s ease-in-out infinite alternate;
+  }
+
+  @keyframes bean-pop {
+    from {
+      scale: 0.45;
+      opacity: 0.25;
+      translate: 0 0;
+    }
+    to {
+      scale: 1;
+      opacity: 0.85;
+      translate: 0 -14px;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .batch-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 768px) {
+    .story-track {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .process-step {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 64px;
+    }
+
+    .process-step__media {
+      justify-self: end;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .batch-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 }
 
@@ -594,16 +888,6 @@
     background:
       radial-gradient(circle at 50% 18%, rgb(0 0 0 / 0.14) 0%, rgb(0 0 0 / 0.462) 68%),
       linear-gradient(180deg, rgb(0 0 0 / 0.224) 0%, rgb(0 0 0 / 0.406) 50%, rgb(0 0 0 / 0.616) 100%);
-  }
-
-  .content-readability::before {
-    inset-inline: -1.5rem;
-    background: linear-gradient(180deg, rgb(0 0 0 / 0.252) 0%, rgb(0 0 0 / 0.476) 26%, rgb(0 0 0 / 0.49) 74%, rgb(0 0 0 / 0.266) 100%);
-  }
-
-  .copy-scrim {
-    padding-inline: 1.25rem;
-    background: rgb(0 0 0 / 0.504);
   }
 }
 
@@ -616,6 +900,17 @@
 
   .sr-word {
     transform: none !important;
+  }
+
+  .bean-drift {
+    animation: none;
+    scale: 1;
+    opacity: 0.6;
+  }
+
+  /* The hero only sticks so the scroll exit can play; without motion it scrolls away normally. */
+  [data-section-panel='hero'] {
+    position: relative;
   }
 
   *,
