@@ -179,6 +179,202 @@
   }
 }
 
+/* ---- Batch Ticket: the signature element (BRIEF §4). ---- */
+@layer components {
+  .batch-ticket {
+    --ticket-shadow: var(--char);
+    --stub: 26px;
+    display: block;
+    /* Size the code and stamp from the ticket's own width, not the viewport. */
+    container-type: inline-size;
+    width: 100%;
+    color: var(--char);
+    /* 1px outline that follows the punched holes (so the ticket reads on cream too), then the hard offset shadow. */
+    --ticket-outline:
+      drop-shadow(1px 0 0 var(--char)) drop-shadow(-1px 0 0 var(--char)) drop-shadow(0 1px 0 var(--char))
+      drop-shadow(0 -1px 0 var(--char));
+    filter: var(--ticket-outline) drop-shadow(8px 8px 0 var(--ticket-shadow));
+    transition:
+      translate var(--dur-hover) var(--ease-card),
+      filter var(--dur-hover) var(--ease-card);
+  }
+
+  .batch-ticket--interactive {
+    cursor: pointer;
+  }
+
+  .batch-ticket--interactive:hover,
+  .batch-ticket--selected {
+    translate: -2px -2px;
+    filter: var(--ticket-outline) drop-shadow(10px 10px 0 var(--ticket-shadow));
+  }
+
+  .batch-ticket--selected {
+    --ticket-shadow: var(--cherry);
+  }
+
+  .batch-ticket__paper {
+    position: relative;
+    border-radius: 6px;
+    background: var(--paper);
+    padding: 24px 24px 24px calc(var(--stub) + 22px);
+    /* Punched holes down the stub edge. */
+    -webkit-mask: radial-gradient(circle 5px at 0 50%, #0000 97%, #000) 0 0 / 100% 18px repeat-y;
+    mask: radial-gradient(circle 5px at 0 50%, #0000 97%, #000) 0 0 / 100% 18px repeat-y;
+  }
+
+  /* Tear line between stub and body. */
+  .batch-ticket__paper::before {
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: var(--stub);
+    border-left: 1.5px dashed rgb(90 84 75 / 0.55);
+    content: '';
+  }
+
+  .batch-ticket__label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mut);
+  }
+
+  .batch-ticket__code {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .batch-ticket--full .batch-ticket__code {
+    margin-top: 10px;
+    font-size: clamp(1.25rem, 10cqi, 2.4rem);
+    white-space: nowrap;
+  }
+
+  .batch-ticket__meta {
+    margin-top: 10px;
+    font-size: 0.875rem;
+    color: var(--ink-mut);
+  }
+
+  .batch-ticket__stamp {
+    display: inline-block;
+    flex-shrink: 0;
+    rotate: -4deg;
+    border: 2px solid var(--cherry);
+    border-radius: 4px;
+    padding: 4px 8px 3px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--cherry);
+  }
+
+  /* Very narrow tickets: let the stamp break onto two lines instead of running off the paper. */
+  @container (max-width: 260px) {
+    .batch-ticket__stamp {
+      max-width: 100%;
+      white-space: normal;
+    }
+  }
+
+  .batch-ticket__notes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 18px;
+  }
+
+  .batch-ticket__notes li {
+    border: 1px solid rgb(27 23 20 / 0.28);
+    border-radius: 9999px;
+    padding: 4px 11px;
+    font-size: 0.8125rem;
+  }
+
+  /* Full tickets fill their grid row and pin the counter to the bottom, so meters line up. */
+  .batch-ticket--full,
+  .batch-ticket--full .batch-ticket__paper {
+    height: 100%;
+  }
+
+  .batch-ticket--full .batch-ticket__paper {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .batch-ticket__counter {
+    margin-top: auto;
+    padding-top: 22px;
+  }
+
+  .batch-ticket__stock {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .batch-ticket__meter {
+    display: block;
+    height: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgb(27 23 20 / 0.14);
+  }
+
+  .batch-ticket__meter > span {
+    display: block;
+    height: 100%;
+    background: var(--char);
+  }
+
+  .batch-ticket__action {
+    margin-top: 24px;
+  }
+
+  /* Strip: one line on desktop, wraps on small screens. */
+  .batch-ticket--strip .batch-ticket__paper {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 20px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    padding-right: 12px;
+  }
+
+  .batch-ticket--strip .batch-ticket__code {
+    font-size: 1.125rem;
+  }
+
+  .batch-ticket--strip .batch-ticket__meta,
+  .batch-ticket--strip .batch-ticket__action {
+    margin-top: 0;
+  }
+
+  .batch-ticket--strip .batch-ticket__action {
+    margin-left: auto;
+  }
+
+  /* Sold out: kept legible (no opacity fade), stamp and counter say why. */
+  .batch-ticket--sold-out .batch-ticket__code {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
+
+  .batch-ticket--sold-out .batch-ticket__meter > span {
+    background: transparent;
+  }
+}
+
 /* ---- Redesign primitives (BRIEF §3). Techniques re-created, nothing taken from the reference. ---- */
 @layer components {
   /* Lenis owns smoothing while it runs; native smooth scroll would fight it. */

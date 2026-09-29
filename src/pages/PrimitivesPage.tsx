@@ -1,5 +1,6 @@
 import { copy } from '../content/copy'
 import { BATCHES } from '../data/shop'
+import { BatchTicket } from '../components/BatchTicket'
 import { InkButton } from '../components/ui/InkButton'
 import { PaperEdge } from '../components/ui/PaperEdge'
 import { SplitReveal } from '../components/ui/SplitReveal'
@@ -53,6 +54,40 @@ export default function PrimitivesPage() {
             <InkButton href="/checkout" variant="cherry">
               {copy.cta.button}
             </InkButton>
+          </div>
+        </section>
+        <PaperEdge side="bottom" />
+      </div>
+
+      <section className="px-4 py-24 md:px-10">
+        <p className={label}>BatchTicket · strip (hero) on dark</p>
+        <div className="mt-6 max-w-4xl">
+          <BatchTicket
+            batch={BATCHES[0]}
+            variant="strip"
+            action={
+              <InkButton href="/checkout" variant="cherry">
+                {copy.cta.button}
+              </InkButton>
+            }
+          />
+        </div>
+        <p className={`${label} mt-16`}>BatchTicket · full on dark</p>
+        <div className="mt-6 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {BATCHES.map((batch) => (
+            <BatchTicket key={batch.code} batch={batch} interactive />
+          ))}
+        </div>
+      </section>
+
+      <div style={{ ['--focus-ring' as string]: 'var(--char)' }}>
+        <PaperEdge side="top" />
+        <section className="bg-paper px-4 py-24 md:px-10">
+          <p className={`${label} text-char`}>BatchTicket · full on cream, first one selected</p>
+          <div className="mt-6 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {BATCHES.map((batch, index) => (
+              <BatchTicket key={batch.code} batch={batch} interactive selected={index === 0} />
+            ))}
           </div>
         </section>
         <PaperEdge side="bottom" />
