@@ -69,6 +69,9 @@ services:
     user: "33:33"
     working_dir: /srv/wp${BASE_PATH}/shop
     environment:
+      # www-data has no writable home; give WP-CLI one for its download cache.
+      HOME: /tmp
+      WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_NAME: ${DB_NAME:-sawargi}
       WORDPRESS_DB_USER: ${DB_USER:-sawargi}

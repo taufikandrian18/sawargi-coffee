@@ -7,7 +7,12 @@ cd "$(dirname "$0")"
 
 # shellcheck disable=SC1091
 set -a; source .env; set +a
-wp() { docker compose run --rm -T wpcli wp "$@"; }
+# Each WP-CLI call is announced, so a stall shows which step it's on, and capped at
+# 10 minutes, so a hung network call fails instead of waiting forever.
+wp() {
+  echo "==> wp $1 ${2:-}" >&2
+  timeout 600 docker compose run --rm -T wpcli wp "$@"
+}
 shop_url="${PUBLIC_URL}${BASE_PATH}/shop"
 
 case "${DB_PASSWORD}${DB_ROOT_PASSWORD}" in
@@ -46,9 +51,11 @@ wp option update woocommerce_manage_stock yes
 if ! wp wc product_cat list --slug=batch --user="${WP_ADMIN_USER}" --format=ids | grep -q '[0-9]'; then
   wp wc product_cat create --name=Batch --slug=batch --user="${WP_ADMIN_USER}"
 fi
-grind_id="$(wp wc product_attribute list --user="${WP_ADMIN_USER}" --field=id --slug=pa_grind 2>/dev/null || true)"
+# The attributes endpoint has no slug filter, so list them all and pick pa_grind.
+grind_id="$(wp wc product_attribute list --user="${WP_ADMIN_USER}" --fields=id,slug --format=csv \
+  | awk -F, '$2 == "pa_grind" || $2 == "grind" { print $1 }')"
 if [ -z "${grind_id}" ]; then
-  grind_id="$(wp wc product_attribute create --name=Grind --slug=grind --user="${WP_ADMIN_USER}" --porcelain)"
+  grind_id="$(wp wc product_attribute create --name=Grind --slug=grind --user="${WP_ADMIN_USER}" --porcelain | tr -dc '0-9')"
 fi
 for term in "Whole bean" "Coarse" "Medium" "Fine"; do
   if ! wp wc product_attribute_term list "${grind_id}" --user="${WP_ADMIN_USER}" --field=name | grep -qx "${term}"; then
