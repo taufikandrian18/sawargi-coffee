@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { copy } from '../../content/copy'
 import type { Batch } from '../../data/shop'
+import { BATCHES } from '../../data/shop'
 import { BatchTicket } from '../BatchTicket'
 import { checkoutHref } from '../../lib/batchLink'
 import { BeanDrift } from '../ui/BeanDrift'
@@ -19,7 +20,13 @@ const line2 = `${copy.hero.line2.thin} ${copy.hero.line2.bold}`
  * §6 section 0: the thesis. Sticky under the content layer; as you scroll,
  * the two lines part left and right (the original GSAP exit, kept).
  */
-export function Hero({ batch }: { batch?: Batch }) {
+/**
+ * While the live stock loads, an invisible stand-in ticket holds the strip's
+ * space, so the headline doesn't jump up when the real batch arrives (CLS).
+ */
+const PLACEHOLDER_BATCH = BATCHES[0]
+
+export function Hero({ batch, pending = false }: { batch?: Batch; pending?: boolean }) {
   const sectionRef = useRef<HTMLElement | null>(null)
   const line1Ref = useRef<HTMLDivElement | null>(null)
   const line2Ref = useRef<HTMLDivElement | null>(null)
@@ -91,8 +98,14 @@ export function Hero({ batch }: { batch?: Batch }) {
           />
         </div>
 
-        {batch && (
-          <div ref={stripRef} className="mt-8 w-full max-w-4xl md:mt-12">
+        {/* Always mounted: the live batch arrives from the store after the scroll exit is
+            built, and the exit has to hold on to this wrapper to fade it out. */}
+        <div
+          ref={stripRef}
+          data-testid="hero-strip"
+          className={batch || pending ? 'mt-8 w-full max-w-4xl md:mt-12' : 'w-full max-w-4xl'}
+        >
+          {batch ? (
             <BatchTicket
               batch={batch}
               variant="strip"
@@ -102,8 +115,18 @@ export function Hero({ batch }: { batch?: Batch }) {
                 </InkButton>
               }
             />
-          </div>
-        )}
+          ) : (
+            pending && (
+              <div data-testid="hero-strip-placeholder" aria-hidden="true" className="invisible">
+                <BatchTicket
+                  batch={PLACEHOLDER_BATCH}
+                  variant="strip"
+                  action={<span className="ink-btn ink-btn--cherry">{copy.cta.button}</span>}
+                />
+              </div>
+            )
+          )}
+        </div>
       </div>
     </section>
   )

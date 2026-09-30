@@ -12,10 +12,10 @@ describe('home page', () => {
     const nav = screen.getByRole('navigation', { name: 'primary' })
 
     expect(within(nav).getByRole('link', { name: 'sawargi home' })).toHaveAttribute('href', '#top')
-    expect(screen.getByTestId('sawargi-logo-mark')).toHaveAttribute('src', '/brand/sawargi-mark-white-cropped.png')
+    expect(screen.getByTestId('sawargi-logo-mark')).toHaveAttribute('src', '/brand/sawargi-mark-white-cropped.webp')
     expect(screen.getByTestId('sawargi-logo-wordmark')).toHaveAttribute(
       'src',
-      '/brand/sawargi-wordmark-white-cropped.png'
+      '/brand/sawargi-wordmark-white-cropped.webp'
     )
     expect(within(nav).getByRole('link', { name: 'Buy Now' })).toHaveAttribute('href', '/checkout')
     // The centre link pill is gone; sections live in the menu at every width.

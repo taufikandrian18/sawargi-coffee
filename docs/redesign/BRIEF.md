@@ -436,19 +436,21 @@ Rules for the flow:
 
 ## 8. Acceptance criteria
 
-- [ ] `npm run build`, `npx tsc -b`, `npm test` and `npm run lint` all pass (lint: 0 errors).
-- [ ] Every string in §5 appears verbatim.
+- [x] `npm run build`, `npx tsc -b`, `npm test` and `npm run lint` all pass (lint: 0 errors). *(Step 7: 92 tests; also runs in CI on every PR.)*
+- [x] Every string in §5 appears verbatim.
   - First move the copy into `src/content/copy.ts`, then redesign.
   - Add a test that imports the copy map and asserts each string renders on `/`.
 - [ ] Scrub video: scrolling top to bottom moves the frame continuously, with no visible stalls, in
       Chrome and Safari at 1440px and 390px. `CinematicVideo` tests still pass.
-- [ ] Reduced motion: no Lenis, no pinning, and no split, wiggle, marquee or cursor animation. Every
+      *(Step 7: Chrome checked at 1440 and 390; iPhone Safari confirmed by Taufik after the
+      loader fix. Desktop Safari not yet checked.)*
+- [x] Reduced motion: no Lenis, no pinning, and no split, wiggle, marquee or cursor animation. Every
       section is readable.
-- [ ] Keyboard: every link and button is reachable in order, focus is visible, and the mobile menu
+- [x] Keyboard: every link and button is reachable in order, focus is visible, and the mobile menu
       traps focus and restores it on close.
-- [ ] Lighthouse (mobile): Performance ≥ 80, Accessibility ≥ 95, CLS < 0.1.
-- [ ] No asset, SVG path, font file or text taken from apocalypsecoffee.com.
-- [ ] Screenshots of every section at 375 / 768 / 1440 committed to `docs/redesign/screens/` for
+- [x] Lighthouse (mobile): Performance ≥ 80, Accessibility ≥ 95, CLS < 0.1. *(Step 7: 93 / 100 / 0–0.002, two runs.)*
+- [x] No asset, SVG path, font file or text taken from apocalypsecoffee.com.
+- [x] Screenshots of every section at 375 / 768 / 1440 committed to `docs/redesign/screens/` for
       review.
 
 ---

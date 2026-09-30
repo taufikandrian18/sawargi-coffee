@@ -23,13 +23,20 @@ export async function fetchWithProgress(
   const reader = response.body.getReader()
   const chunks: BlobPart[] = []
   let loaded = 0
+  let reported = -1
   for (;;) {
     const { done, value } = await reader.read()
     if (done) break
     chunks.push(value)
     loaded += value.byteLength
-    // Hold at 99 until the stream actually ends.
-    onProgress(Math.min(99, Math.floor((loaded / total) * 100)))
+    // Hold at 99 until the stream actually ends. Report only when the whole
+    // percent changes: a large file arrives in thousands of chunks, and each
+    // report re-renders the loader.
+    const percent = Math.min(99, Math.floor((loaded / total) * 100))
+    if (percent !== reported) {
+      reported = percent
+      onProgress(percent)
+    }
   }
   onProgress(100)
   return new Blob(chunks, { type })

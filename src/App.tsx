@@ -11,7 +11,7 @@ import {
 } from './components/home/Chapters'
 import { Hero } from './components/home/Hero'
 import { HomeNav } from './components/home/HomeNav'
-import { useCurrentBatch } from './lib/useCatalog'
+import { useCatalog, useCurrentBatch } from './lib/useCatalog'
 import { asset } from './lib/basePath'
 
 // All-keyframe MP4s re-encoded for scroll scrubbing (see docs/video-scrub.md).
@@ -25,6 +25,7 @@ const videoPoster = asset('/media/scrub/coffee-scrub-poster.webp')
  */
 function App() {
   const currentBatch = useCurrentBatch()
+  const stockLoading = useCatalog().status === 'loading'
   return (
     <main id="top" className="relative min-h-screen w-full bg-ink text-paper">
       <CinematicVideo src={videoSrc} smallSrc={videoSmallSrc} poster={videoPoster} />
@@ -34,7 +35,7 @@ function App() {
         className="video-readability-scrim pointer-events-none fixed inset-0 z-[1]"
       />
       <HomeNav />
-      <Hero batch={currentBatch} />
+      <Hero batch={currentBatch} pending={stockLoading} />
 
       <div data-testid="story-sections-layer" className="relative z-20">
         <ProofBand />
