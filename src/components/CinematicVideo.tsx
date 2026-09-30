@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Hls from 'hls.js'
 import gsap from 'gsap'
+import { fetchWithProgress } from '../lib/fetchWithProgress'
 import { isSmoothScrollActive } from '../lib/smoothScroll'
 import { getElementDocumentTop, getSectionScrollProgress } from './scrollProgress'
 
@@ -8,6 +9,8 @@ type CinematicVideoProps = {
   src: string
   /** Lighter file for small screens / data-saver. Falls back to `src`. */
   smallSrc?: string
+  /** Still frame shown until the video can paint (and if it never can). */
+  poster?: string
   className?: string
 }
 
@@ -41,7 +44,17 @@ export const pickVideoSource = (src: string, smallSrc?: string) => {
   return small || connection?.saveData ? smallSrc : src
 }
 
-export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideoProps) {
+/**
+ * Whole-file download for MP4s: real loader progress, and every scrub seek is
+ * served from memory instead of a range request. Needs streams and blob URLs.
+ */
+const canDownloadWhole = () =>
+  typeof URL !== 'undefined' &&
+  typeof URL.createObjectURL === 'function' &&
+  typeof ReadableStream !== 'undefined' &&
+  typeof fetch === 'function'
+
+export function CinematicVideo({ src, smallSrc, poster, className = '' }: CinematicVideoProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const [progress, setProgress] = useState(0)
@@ -64,16 +77,42 @@ export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideo
       setProgress(Math.min(100, Math.round((bufferedEnd / video.duration) * 100)))
     }
 
-    const onCanPlay = () => {
-      setCanPlay(true)
-      // Prime the decoder once (iOS Safari only paints seeked frames after a
-      // play), then hold still — scroll drives the playhead, not playback.
+    // Prime the decoder once (iOS Safari only paints seeked frames after a
+    // play), then hold still: scroll drives the playhead, not playback.
+    // iOS never fires `canplay` before a play() (it doesn't buffer ahead), so
+    // this runs on the first decodable frame instead of waiting for it.
+    let primed = false
+    const prime = () => {
       const playback = video.play()
       if (playback && typeof playback.then === 'function') {
-        void playback.then(() => video.pause()).catch(() => undefined)
+        void playback
+          .then(() => {
+            primed = true
+            video.pause()
+          })
+          .catch(() => {
+            // Low Power Mode and some in-app browsers refuse play() without a
+            // gesture; prime on the visitor's first touch instead.
+            window.addEventListener('touchstart', primeOnGesture, { once: true, passive: true })
+            window.addEventListener('pointerdown', primeOnGesture, { once: true, passive: true })
+          })
       } else {
+        primed = true
         video.pause()
       }
+    }
+    const primeOnGesture = () => {
+      window.removeEventListener('touchstart', primeOnGesture)
+      window.removeEventListener('pointerdown', primeOnGesture)
+      if (!primed) prime()
+    }
+
+    let ready = false
+    const onReady = () => {
+      if (ready) return
+      ready = true
+      setCanPlay(true)
+      prime()
     }
 
     // A browser that can't decode the file (or a stalled network) must still get the site.
@@ -81,9 +120,13 @@ export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideo
     const timeout = window.setTimeout(giveUp, LOADER_TIMEOUT_MS)
     video.addEventListener('error', giveUp)
 
-    video.addEventListener('canplay', onCanPlay, { once: true })
+    video.addEventListener('loadeddata', onReady)
+    video.addEventListener('canplay', onReady)
     video.addEventListener('progress', reportBuffered)
     video.addEventListener('loadedmetadata', reportBuffered)
+
+    const download = new AbortController()
+    let objectUrl: string | undefined
 
     if (sourceIsHls && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = activeSrc
@@ -101,14 +144,31 @@ export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideo
       hls.on(Hls.Events.FRAG_BUFFERED, reportBuffered)
       hls.loadSource(activeSrc)
       hls.attachMedia(video)
+    } else if (!sourceIsHls && canDownloadWhole()) {
+      fetchWithProgress(activeSrc, setProgress, download.signal)
+        .then((blob) => {
+          objectUrl = URL.createObjectURL(blob)
+          video.src = objectUrl
+          video.load()
+        })
+        .catch(() => {
+          if (download.signal.aborted) return
+          // Fall back to letting the browser stream the file itself.
+          video.src = activeSrc
+        })
     } else {
       video.src = activeSrc
     }
 
     return () => {
       window.clearTimeout(timeout)
+      download.abort()
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+      window.removeEventListener('touchstart', primeOnGesture)
+      window.removeEventListener('pointerdown', primeOnGesture)
       video.removeEventListener('error', giveUp)
-      video.removeEventListener('canplay', onCanPlay)
+      video.removeEventListener('loadeddata', onReady)
+      video.removeEventListener('canplay', onReady)
       video.removeEventListener('progress', reportBuffered)
       video.removeEventListener('loadedmetadata', reportBuffered)
       hls?.destroy()
@@ -251,6 +311,7 @@ export function CinematicVideo({ src, smallSrc, className = '' }: CinematicVideo
           disablePictureInPicture
           crossOrigin="anonymous"
           preload="auto"
+          poster={poster}
         />
       </div>
     </>

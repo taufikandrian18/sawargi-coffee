@@ -63,9 +63,13 @@ describe('home page', () => {
   })
 
   it('keeps the scroll-scrubbed video behind the page', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise<Response>(() => undefined))
     render(<App />)
 
-    expect(document.querySelector('video')).toHaveAttribute('src', '/media/scrub/coffee-scrub-1080.mp4')
+    // Downloaded whole (real loader progress); a still frame shows until it can paint.
+    expect(fetchSpy).toHaveBeenCalledWith('/media/scrub/coffee-scrub-1080.mp4', expect.anything())
+    expect(document.querySelector('video')).toHaveAttribute('poster', '/media/scrub/coffee-scrub-poster.webp')
+    fetchSpy.mockRestore()
     expect(screen.getByTestId('video-readability-scrim')).toHaveAttribute('aria-hidden', 'true')
     expect(document.querySelectorAll('[data-video-section]').length).toBeGreaterThanOrEqual(6)
     expect(screen.getByTestId('hero-section')).toHaveAttribute('data-section-panel', 'hero')

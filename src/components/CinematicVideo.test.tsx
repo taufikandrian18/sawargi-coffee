@@ -131,10 +131,13 @@ describe('CinematicVideo', () => {
       value: vi.fn(() => '')
     })
     setScroll(0)
+    // By default the whole-file download never settles; tests that need it stub their own.
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => undefined)))
   })
 
   afterEach(() => {
     cleanup()
+    vi.unstubAllGlobals()
     vi.mocked(window.requestAnimationFrame).mockRestore()
     vi.mocked(window.cancelAnimationFrame).mockRestore()
   })
@@ -143,7 +146,9 @@ describe('CinematicVideo', () => {
     render(<CinematicVideo src="/media/scrub/clip.mp4" className="custom-video" />)
 
     const video = getVideo()
-    expect(video.getAttribute('src')).toBe('/media/scrub/clip.mp4')
+    // The MP4 is downloaded whole first (real progress); src is set once it has arrived.
+    expect(fetch).toHaveBeenCalledWith('/media/scrub/clip.mp4', expect.anything())
+    expect(video.getAttribute('src')).toBeNull()
     expect(video.muted).toBe(true)
     expect(video.playsInline).toBe(true)
     expect(video.loop).toBe(false)
@@ -169,6 +174,70 @@ describe('CinematicVideo', () => {
     act(() => vi.advanceTimersByTime(LOADER_TIMEOUT_MS))
     expect(screen.queryByText(/loading\.\.\./)).not.toBeInTheDocument()
     vi.useRealTimers()
+  })
+
+  it('downloads the MP4 whole with real progress, then plays it from memory', async () => {
+    const chunk = new Uint8Array(5)
+    let pull = 0
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (pull++ < 2) controller.enqueue(chunk)
+        else controller.close()
+      }
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(body, { headers: { 'content-length': '10', 'content-type': 'video/mp4' } }))
+    )
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:sawargi-video')
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    const load = vi.spyOn(window.HTMLMediaElement.prototype, 'load').mockImplementation(() => undefined)
+
+    const { unmount } = render(<CinematicVideo src="/clip.mp4" />)
+    await vi.waitFor(() => expect(getVideo().getAttribute('src')).toBe('blob:sawargi-video'))
+    expect(screen.getByText('loading... 100%')).toBeInTheDocument()
+    expect(load).toHaveBeenCalled()
+
+    // The loader leaves on the first decodable frame, not on canplay (iOS never sends it before play()).
+    fireEvent(getVideo(), new Event('loadeddata'))
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(screen.queryByText(/loading\.\.\./)).not.toBeInTheDocument()
+    expect(window.HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1)
+
+    unmount()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:sawargi-video')
+    load.mockRestore()
+    createObjectURL.mockRestore()
+    revokeObjectURL.mockRestore()
+  })
+
+  it('falls back to streaming the file if the download fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 503 })))
+    render(<CinematicVideo src="/clip.mp4" />)
+    await vi.waitFor(() => expect(getVideo().getAttribute('src')).toBe('/clip.mp4'))
+  })
+
+  it('primes on the first touch when the browser refuses play() without a gesture', async () => {
+    const play = vi.mocked(window.HTMLMediaElement.prototype.play)
+    play.mockRejectedValueOnce(new DOMException('Low Power Mode', 'NotAllowedError'))
+    render(<CinematicVideo src="/clip.mp4" />)
+
+    fireEvent(getVideo(), new Event('loadeddata'))
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(play).toHaveBeenCalledTimes(1)
+    expect(window.HTMLMediaElement.prototype.pause).not.toHaveBeenCalled()
+
+    fireEvent.touchStart(window)
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(play).toHaveBeenCalledTimes(2)
+    expect(window.HTMLMediaElement.prototype.pause).toHaveBeenCalled()
   })
 
   it('hides the loader on canplay and primes the decoder with play then pause', async () => {

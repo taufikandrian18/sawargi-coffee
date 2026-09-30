@@ -17,6 +17,7 @@ import { asset } from './lib/basePath'
 // All-keyframe MP4s re-encoded for scroll scrubbing (see docs/video-scrub.md).
 const videoSrc = asset('/media/scrub/coffee-scrub-1080.mp4')
 const videoSmallSrc = asset('/media/scrub/coffee-scrub-720.mp4')
+const videoPoster = asset('/media/scrub/coffee-scrub-poster.webp')
 
 /**
  * Home page, structured per docs/redesign/BRIEF.md §6: hook, proof band,
@@ -26,7 +27,7 @@ function App() {
   const currentBatch = useCurrentBatch()
   return (
     <main id="top" className="relative min-h-screen w-full bg-ink text-paper">
-      <CinematicVideo src={videoSrc} smallSrc={videoSmallSrc} />
+      <CinematicVideo src={videoSrc} smallSrc={videoSmallSrc} poster={videoPoster} />
       <div
         aria-hidden="true"
         data-testid="video-readability-scrim"
