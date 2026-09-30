@@ -47,3 +47,19 @@ If the file gets too heavy, try `-g 4` before lowering resolution. Seeks then de
 In `src/components/CinematicVideo.tsx`, `SCRUB_SMOOTHING` (default `0.18`) sets how fast the
 video catches up with the scrollbar. Lower values glide more; higher values track the
 scrollbar more tightly.
+
+## Loading (loader, iOS, poster)
+
+- **Loader progress:** MP4s are downloaded whole with `fetch` (`src/lib/fetchWithProgress.ts`),
+  so the loader shows real progress from `Content-Length`. The video then plays from a `blob:`
+  URL, so every scrub seek is served from memory. If the download fails, the browser streams
+  the file itself instead.
+- **When the loader leaves:** on the first decodable frame (`loadeddata`), not on `canplay`.
+  iOS Safari doesn't buffer before a `play()`, so it never sends `canplay` first, and waiting
+  for it left the loader at 0% and the video unprimed on iPhones.
+- **Priming:** the decoder is primed with `play()` → `pause()`. When a browser refuses `play()`
+  without a gesture (iOS Low Power Mode, some in-app browsers), priming retries on the first
+  touch.
+- **Poster:** `public/media/scrub/coffee-scrub-poster.webp` is the clip's first frame. It shows
+  until the video paints, and stays if it never can. After re-encoding the clip, regenerate it:
+  `ffmpeg -i public/media/scrub/coffee-scrub-1080.mp4 -frames:v 1 -vf scale=1280:-2 -c:v libwebp -quality 72 public/media/scrub/coffee-scrub-poster.webp`
