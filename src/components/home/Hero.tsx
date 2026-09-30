@@ -91,8 +91,14 @@ export function Hero({ batch }: { batch?: Batch }) {
           />
         </div>
 
-        {batch && (
-          <div ref={stripRef} className="mt-8 w-full max-w-4xl md:mt-12">
+        {/* Always mounted: the live batch arrives from the store after the scroll exit is
+            built, and the exit has to hold on to this wrapper to fade it out. */}
+        <div
+          ref={stripRef}
+          data-testid="hero-strip"
+          className={batch ? 'mt-8 w-full max-w-4xl md:mt-12' : 'w-full max-w-4xl'}
+        >
+          {batch && (
             <BatchTicket
               batch={batch}
               variant="strip"
@@ -102,8 +108,8 @@ export function Hero({ batch }: { batch?: Batch }) {
                 </InkButton>
               }
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </section>
   )
