@@ -3,12 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { BATCHES } from '../../data/shop'
 
 const tweened = vi.hoisted(() => [] as Element[])
+const tweenVars = vi.hoisted(() => new Map<Element, Record<string, unknown>>())
 
 vi.mock('gsap', () => {
   const timeline = () => {
     const tl = {
-      to: (target: Element) => {
+      to: (target: Element, vars: Record<string, unknown>) => {
         tweened.push(target)
+        tweenVars.set(target, vars)
         return tl
       },
       kill: () => undefined
@@ -27,6 +29,8 @@ describe('Hero batch strip', () => {
     const { rerender } = render(<Hero />)
     const strip = screen.getByTestId('hero-strip')
     expect(tweened).toContain(strip)
+    // autoAlpha ends at visibility:hidden, which iPhone WebKit honours for the ticket's filtered layers.
+    expect(tweenVars.get(strip)).toMatchObject({ autoAlpha: 0 })
 
     // The batch arrives: it renders inside the same wrapper the exit animates.
     rerender(<Hero batch={BATCHES[0]} />)
