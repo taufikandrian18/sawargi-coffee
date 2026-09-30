@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import Hls from 'hls.js'
+import type Hls from 'hls.js'
 import gsap from 'gsap'
 import { fetchWithProgress } from '../lib/fetchWithProgress'
 import { isSmoothScrollActive } from '../lib/smoothScroll'
@@ -130,20 +130,28 @@ export function CinematicVideo({ src, smallSrc, poster, className = '' }: Cinema
 
     if (sourceIsHls && video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = activeSrc
-    } else if (sourceIsHls && Hls.isSupported()) {
-      // The clip is short: buffer all of it once and never restart loading on
-      // seek. Restarting the loader on every scroll seek caused stalls.
-      hls = new Hls({
-        maxBufferLength: 600,
-        maxMaxBufferLength: 600,
-        backBufferLength: Infinity,
-        startPosition: 0,
-        capLevelToPlayerSize: true,
-        startFragPrefetch: true
+    } else if (sourceIsHls) {
+      // hls.js is ~200 KB and only needed for .m3u8 sources, so it loads on demand.
+      void import('hls.js').then(({ default: HlsPlayer }) => {
+        if (download.signal.aborted) return
+        if (!HlsPlayer.isSupported()) {
+          video.src = activeSrc
+          return
+        }
+        // The clip is short: buffer all of it once and never restart loading on
+        // seek. Restarting the loader on every scroll seek caused stalls.
+        hls = new HlsPlayer({
+          maxBufferLength: 600,
+          maxMaxBufferLength: 600,
+          backBufferLength: Infinity,
+          startPosition: 0,
+          capLevelToPlayerSize: true,
+          startFragPrefetch: true
+        })
+        hls.on(HlsPlayer.Events.FRAG_BUFFERED, reportBuffered)
+        hls.loadSource(activeSrc)
+        hls.attachMedia(video)
       })
-      hls.on(Hls.Events.FRAG_BUFFERED, reportBuffered)
-      hls.loadSource(activeSrc)
-      hls.attachMedia(video)
     } else if (!sourceIsHls && canDownloadWhole()) {
       fetchWithProgress(activeSrc, setProgress, download.signal)
         .then((blob) => {

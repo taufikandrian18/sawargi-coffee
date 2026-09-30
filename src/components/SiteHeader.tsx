@@ -19,12 +19,12 @@ export function SiteHeader({ current }: { current?: 'journal' | 'checkout' }) {
         <Link to="/" aria-label="sawargi home" className="nav-focus flex min-h-11 items-center">
           <span className="sawargi-composite-logo flex items-center">
             <img
-              src={asset('/brand/sawargi-mark-white-cropped.png')}
+              src={asset('/brand/sawargi-mark-white-cropped.webp')}
               alt=""
               className="h-7 w-7 shrink-0 object-contain"
             />
             <img
-              src={asset('/brand/sawargi-wordmark-white-cropped.png')}
+              src={asset('/brand/sawargi-wordmark-white-cropped.webp')}
               alt=""
               className="h-[1.125rem] w-auto object-contain"
             />

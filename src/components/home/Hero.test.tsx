@@ -33,4 +33,16 @@ describe('Hero batch strip', () => {
     expect(screen.getByTestId('hero-strip')).toBe(strip)
     expect(strip).toHaveTextContent(BATCHES[0].code)
   })
+
+  it('holds the strip space while stock loads, invisibly, so the headline does not jump', () => {
+    const { rerender } = render(<Hero pending />)
+    const placeholder = screen.getByTestId('hero-strip-placeholder')
+    expect(placeholder).toHaveClass('invisible')
+    expect(placeholder).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+
+    rerender(<Hero pending={false} batch={BATCHES[0]} />)
+    expect(screen.queryByTestId('hero-strip-placeholder')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /order this batch/i })).toBeInTheDocument()
+  })
 })

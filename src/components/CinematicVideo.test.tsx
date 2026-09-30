@@ -276,7 +276,7 @@ describe('CinematicVideo', () => {
     expect(pickVideoSource('/big.mp4')).toBe('/big.mp4')
   })
 
-  it('uses native HLS on Safari and hls.js elsewhere without restarting loads on seek', () => {
+  it('uses native HLS on Safari and hls.js elsewhere without restarting loads on seek', async () => {
     Object.defineProperty(window.HTMLMediaElement.prototype, 'canPlayType', {
       configurable: true,
       value: vi.fn(() => 'probably')
@@ -293,6 +293,8 @@ describe('CinematicVideo', () => {
     render(<CinematicVideo src="/stream/master.m3u8" />)
     const video = getVideo()
     mockPlayableVideo(video)
+    // hls.js is loaded on demand, only for .m3u8 sources.
+    await vi.waitFor(() => expect(mocks.hlsInstances).toHaveLength(1))
     const hls = mocks.hlsInstances[0]
     expect(hls.loadSource).toHaveBeenCalledWith('/stream/master.m3u8')
     expect(hls.attachMedia).toHaveBeenCalledWith(video)
