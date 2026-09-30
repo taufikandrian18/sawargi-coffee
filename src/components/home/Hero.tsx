@@ -44,7 +44,10 @@ export function Hero({ batch, pending = false }: { batch?: Batch; pending?: bool
       .to(first, { opacity: 0, x: -180, y: -44, filter: 'blur(10px)', ease: 'none', duration: 1 }, 0)
       .to(second, { opacity: 0, x: 180, y: -44, filter: 'blur(10px)', ease: 'none', duration: 1 }, 0)
     // The strip sits lowest, so the incoming proof band reaches it first: clear it in the first third.
-    if (strip) exit.to(strip, { opacity: 0, y: 24, ease: 'none', duration: 0.33 }, 0)
+    // autoAlpha, not opacity: it ends at visibility:hidden, which WebKit honours for the ticket's
+    // filtered/masked layers (they could ignore the parent's opacity inside the sticky hero on
+    // iPhone), and it takes the hidden "Order this batch" out of taps and the tab order.
+    if (strip) exit.to(strip, { autoAlpha: 0, y: 24, ease: 'none', duration: 0.33 }, 0)
     const beans = section.querySelector('[data-testid="bean-drift"]')
     if (beans) exit.to(beans, { opacity: 0, ease: 'none', duration: 1 }, 0)
 
