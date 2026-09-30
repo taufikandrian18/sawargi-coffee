@@ -1,0 +1,59 @@
+# Checks every pull request; on main, also builds the site and deploys it to the VPS.
+# VPS side: deploy/remote-deploy.sh. Setup (secrets, deploy key): docs/cms/WORDPRESS.md §5.
+name: CI / Deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-{0}', github.ref) || 'deploy-vps' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Where the live site is served, and the WooCommerce store it reads.
+      SITE_BASE_PATH: /sawargi-coffee
+      VITE_WC_URL: https://website.taufikandrian.my.id/sawargi-coffee/shop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc -b
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build
+      - name: Package the site
+        run: tar -C dist -czf site.tar.gz .
+
+      - name: Deploy to the VPS
+        if: github.event_name != 'pull_request'
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_SSH_KEY" ] || [ -z "$VPS_KNOWN_HOSTS" ]; then
+            echo "::error::Deploy secrets are missing (VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_KNOWN_HOSTS). See docs/cms/WORDPRESS.md §5."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # The key's forced command on the VPS runs deploy/remote-deploy.sh with this SHA.
+          ssh -i ~/.ssh/deploy_key -p "${VPS_PORT:-22}" \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "${VPS_USER:-ubuntu}@${VPS_HOST}" "$GITHUB_SHA" < site.tar.gz
