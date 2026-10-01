@@ -188,12 +188,11 @@ container the old one. The pipeline handles this for you; by hand, you have to r
 
 ## 6. Backups
 
-```bash
-./deploy/backup.sh     # database + uploads into deploy/backups, keeps 14 days
-```
-
-Add it to cron (see the top of the script) **and copy the backups off the VPS**
-(e.g. rclone to cloud storage). A backup on the same disk isn't a backup.
+See **[BACKUPS.md](BACKUPS.md)**. In short:
+- `./deploy/install-backup-cron.sh` turns on a nightly backup of the database and uploads.
+- `BACKUP_REMOTE` in `.env` adds an encrypted copy off the server (rclone).
+- `./deploy/verify-backup.sh` restores the newest backup into a throwaway database, to prove it
+  works.
 
 ## 7. Security checklist
 
