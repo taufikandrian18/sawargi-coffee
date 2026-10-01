@@ -68,7 +68,8 @@ if [ -n "${changed}" ]; then
     cd deploy
     docker compose up -d
     if grep -qx 'deploy/Caddyfile' <<<"${changed}"; then docker compose up -d --force-recreate caddy; fi
-    if grep -qx 'wordpress/mu-plugins/sawargi-headless.php' <<<"${changed}"; then docker compose restart wordpress; fi
+    # PHP caches compiled plugins; a restart makes plugin changes take effect at once.
+    if grep -q '^wordpress/mu-plugins/' <<<"${changed}"; then docker compose restart wordpress; fi
   )
 fi
 
