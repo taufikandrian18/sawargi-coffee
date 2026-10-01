@@ -41,7 +41,7 @@ you've seen a screenshot.
 | `public/media/scrub/*.mp4` | All-keyframe 1080p/720p encodes made for scrubbing. See `docs/video-scrub.md` |
 | `src/data/shop.ts` | Product, batches (sample data), grinds, shipping, currencies. Single source of truth for prices |
 | `src/pages/CheckoutPage.tsx` | Dummy checkout (no real payment, stores nothing) |
-| `src/pages/JournalPage.tsx` | Journal index + researched article. Evidence notes are in `docs/research/` |
+| `src/pages/JournalPage.tsx`, `src/data/journal.ts` | Journal index + the researched static article (evidence notes in `docs/research/`), plus articles written as WordPress posts, fetched from `wp/v2/posts` and rendered at `/journal/<slug>` after an allowlist sanitiser. `sawargi-headless.php` redirects WordPress's own post pages there |
 | `src/data/catalog.ts`, `src/lib/catalog.tsx` | The catalogue the site renders: sample data, or live batches/stock from WooCommerce when `VITE_WC_URL` is set |
 | `wordpress/mu-plugins/sawargi-headless.php` | WordPress plugin: batch fields in WP admin + `extensions.sawargi` on the Store API. Contract-tested by `src/data/contract.test.ts` |
 | `wordpress/mu-plugins/sawargi-checkout.php` | Dresses WooCommerce's checkout, cart, order-received and account pages in the site's look (theme-agnostic CSS on `wc-block-*` classes + a Sawargi header via `wp_body_open`). The whole `mu-plugins/` folder is mounted, so new plugins deploy automatically |

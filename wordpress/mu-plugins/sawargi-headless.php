@@ -203,6 +203,23 @@ add_action(
 			wp_safe_redirect( SAWARGI_FRONTEND_URL, 302 );
 			exit;
 		}
+		// Posts are journal articles; the site renders them at /journal/<slug>.
+		// Previews stay in WordPress so drafts can be checked before publishing.
+		if ( is_preview() ) {
+			return;
+		}
+		if ( is_singular( 'post' ) ) {
+			$post = get_queried_object();
+			if ( $post instanceof WP_Post && 'publish' === $post->post_status ) {
+				wp_safe_redirect( trailingslashit( SAWARGI_FRONTEND_URL ) . 'journal/' . $post->post_name, 302 );
+				exit;
+			}
+			return;
+		}
+		if ( is_home() || is_category() || is_tag() || is_author() || is_date() ) {
+			wp_safe_redirect( trailingslashit( SAWARGI_FRONTEND_URL ) . 'journal', 302 );
+			exit;
+		}
 	}
 );
 

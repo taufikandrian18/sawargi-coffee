@@ -1,7 +1,10 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { SiteHeader } from '../components/SiteHeader'
 import { InkButton } from '../components/ui/InkButton'
+import type { JournalPost } from '../data/journal'
+import { fetchJournalPost, fetchJournalPosts, formatJournalDate } from '../data/journal'
 import { Link } from '../lib/router'
+import { useCatalog } from '../lib/useCatalog'
 
 type Reference = { id: number; text: string; href: string }
 
@@ -84,10 +87,47 @@ export const ARTICLE = {
   title: 'Dried in the Fruit',
   subtitle: 'What natural processing actually does to a Ciwidey coffee — and what it doesn’t.',
   date: '29 September 2026',
+  isoDate: '2026-09-29',
   readingTime: '9 min read'
 }
 
-export function JournalIndexPage() {
+type Entry = { slug: string; isoDate: string; date: string; readingTime: string; title: string; subtitle: string }
+
+const STATIC_ENTRY: Entry = ARTICLE
+
+function postEntry(post: JournalPost): Entry {
+  return {
+    slug: post.slug,
+    isoDate: post.date,
+    date: formatJournalDate(post.date),
+    readingTime: `${post.readingMinutes} min read`,
+    title: post.title,
+    subtitle: post.excerpt
+  }
+}
+
+/** Articles written in WordPress, once the shop answers; [] without a shop or on error. */
+function useJournalPosts(fetchImpl?: typeof fetch) {
+  const storeUrl = useCatalog().catalog.storeUrl ?? ''
+  const [posts, setPosts] = useState<JournalPost[]>([])
+  useEffect(() => {
+    if (!storeUrl) return
+    let cancelled = false
+    fetchJournalPosts(storeUrl, fetchImpl)
+      .then((found) => !cancelled && setPosts(found))
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [storeUrl, fetchImpl])
+  return posts
+}
+
+export function JournalIndexPage({ fetchImpl }: { fetchImpl?: typeof fetch }) {
+  const posts = useJournalPosts(fetchImpl)
+  const entries = [STATIC_ENTRY, ...posts.filter((post) => post.slug !== ARTICLE.slug).map(postEntry)].sort((a, b) =>
+    b.isoDate.localeCompare(a.isoDate)
+  )
   return (
     <div className="journal-surface min-h-screen bg-paper text-char">
       <SiteHeader current="journal" />
@@ -101,22 +141,41 @@ export function JournalIndexPage() {
           down what we learn — with sources.
         </p>
 
-        <Link
-          to={`/journal/${ARTICLE.slug}`}
-          className="group mt-14 block border-t border-char/20 py-10 transition-colors hover:border-char"
-        >
-          <p className="font-plex text-[0.8125rem] uppercase tracking-[0.08em] text-ink-mut">
-            {ARTICLE.date} · {ARTICLE.readingTime}
-          </p>
-          <h2 className="display-step mt-4">
-            {ARTICLE.title}
-          </h2>
-          <p className="mt-4 max-w-2xl text-lg text-ink-mut">{ARTICLE.subtitle}</p>
-          <span className="mt-6 inline-block text-sm font-medium uppercase tracking-[0.22em] text-cherry transition-colors group-hover:text-char">
-            Read the article →
-          </span>
-        </Link>
+        <div className="mt-14">
+          {entries.map((entry) => (
+            <Link
+              key={entry.slug}
+              to={`/journal/${entry.slug}`}
+              className="group block border-t border-char/20 py-10 transition-colors hover:border-char"
+            >
+              <p className="font-plex text-[0.8125rem] uppercase tracking-[0.08em] text-ink-mut">
+                {entry.date} · {entry.readingTime}
+              </p>
+              <h2 className="display-step mt-4">
+                {entry.title}
+              </h2>
+              <p className="mt-4 max-w-2xl text-lg text-ink-mut">{entry.subtitle}</p>
+              <span className="mt-6 inline-block text-sm font-medium uppercase tracking-[0.22em] text-cherry transition-colors group-hover:text-char">
+                Read the article →
+              </span>
+            </Link>
+          ))}
+        </div>
       </main>
+    </div>
+  )
+}
+
+function CoffeeCta() {
+  return (
+    <div className="mt-16 rounded-[2rem] bg-char p-8 text-center text-paper md:p-10" style={{ '--focus-ring': 'var(--paper)' } as CSSProperties}>
+      <p className="text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-paper-mut">the coffee in this article</p>
+      <p className="display-step mt-3">Ciwidey Natural · 1 kg</p>
+      <div className="mt-8">
+        <InkButton href="/checkout" variant="cherry">
+          Choose a batch
+        </InkButton>
+      </div>
     </div>
   )
 }
@@ -302,15 +361,7 @@ export function JournalArticlePage() {
           </p>
         </div>
 
-        <div className="mt-16 rounded-[2rem] bg-char p-8 text-center text-paper md:p-10" style={{ '--focus-ring': 'var(--paper)' } as CSSProperties}>
-          <p className="text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-paper-mut">the coffee in this article</p>
-          <p className="display-step mt-3">Ciwidey Natural · 1 kg</p>
-          <div className="mt-8">
-            <InkButton href="/checkout" variant="cherry">
-              Choose a batch
-            </InkButton>
-          </div>
-        </div>
+        <CoffeeCta />
 
         <section aria-label="sources" className="mt-16 border-t border-char/15 pt-10">
           <h2 className="text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-ink-mut">Sources</h2>
@@ -330,6 +381,70 @@ export function JournalArticlePage() {
             ))}
           </ol>
         </section>
+      </article>
+    </div>
+  )
+}
+
+type PostState = { status: 'loading' } | { status: 'ready'; post: JournalPost } | { status: 'missing' }
+
+/** An article written in WordPress, at /journal/<its slug>. */
+export function WordPressArticlePage({ slug, fetchImpl }: { slug: string; fetchImpl?: typeof fetch }) {
+  const storeUrl = useCatalog().catalog.storeUrl ?? ''
+  const [state, setState] = useState<PostState>(() => (storeUrl ? { status: 'loading' } : { status: 'missing' }))
+
+  useEffect(() => {
+    if (!storeUrl) return
+    let cancelled = false
+    fetchJournalPost(storeUrl, slug, fetchImpl)
+      .then((post) => !cancelled && setState(post ? { status: 'ready', post } : { status: 'missing' }))
+      .catch(() => !cancelled && setState({ status: 'missing' }))
+    return () => {
+      cancelled = true
+    }
+  }, [storeUrl, slug, fetchImpl])
+
+  return (
+    <div className="journal-surface min-h-screen bg-paper text-char">
+      <SiteHeader current="journal" />
+      <article className="mx-auto max-w-3xl px-4 py-16 md:px-8 md:py-24">
+        <p className="text-[0.8125rem] font-medium uppercase tracking-[0.22em] text-ink-mut">
+          <Link to="/journal" className="underline decoration-cherry/50 underline-offset-4 hover:text-char">
+            journal
+          </Link>
+        </p>
+        {state.status === 'loading' && (
+          <p role="status" className="mt-8 font-plex text-sm uppercase tracking-[0.08em] text-ink-mut">
+            Loading the article…
+          </p>
+        )}
+        {state.status === 'missing' && (
+          <>
+            <h1 className="display-chapter mt-5">Article not found</h1>
+            <p className="mt-6 text-lg text-ink-mut">It may have moved, or it isn't published yet.</p>
+            <div className="mt-10">
+              <InkButton href="/journal" variant="cherry">
+                All articles
+              </InkButton>
+            </div>
+          </>
+        )}
+        {state.status === 'ready' && (
+          <>
+            <header>
+              <h1 className="display-chapter mt-5">{state.post.title}</h1>
+              <p className="mt-6 font-plex text-sm text-ink-mut">
+                Sawargi · {formatJournalDate(state.post.date)} · {state.post.readingMinutes} min read
+              </p>
+            </header>
+            {/* Sanitised in data/journal.ts: allowlisted tags and attributes only. */}
+            <div
+              className="journal-prose mt-14 border-t border-char/15 pt-12"
+              dangerouslySetInnerHTML={{ __html: state.post.html }}
+            />
+            <CoffeeCta />
+          </>
+        )}
       </article>
     </div>
   )
