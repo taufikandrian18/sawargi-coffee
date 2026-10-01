@@ -4,13 +4,15 @@
 #   ./deploy/verify-backup.sh                                   newest backup
 #   ./deploy/verify-backup.sh deploy/backups/db-20261001-0317.sql.gz
 set -euo pipefail
+# A path given on the command line is relative to where you ran the script, not to deploy/.
+arg="${1:+$(realpath -m -- "$1")}"
 cd "$(dirname "$(realpath "$0")")"
 
 fail() { echo "verify: $*" >&2; exit 1; }
 
 # shellcheck disable=SC1091
 set -a; source .env; set +a
-file="${1:-$(ls -1t backups/db-*.sql.gz 2>/dev/null | head -n 1)}"
+file="${arg:-$(ls -1t backups/db-*.sql.gz 2>/dev/null | head -n 1)}"
 [ -n "${file}" ] && [ -f "${file}" ] || fail "no database backup found (run ./deploy/backup.sh first)"
 gzip -t "${file}" || fail "${file} is not a valid gzip"
 
