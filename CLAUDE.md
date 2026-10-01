@@ -35,20 +35,21 @@ you've seen a screenshot.
 
 | Path | What it is |
 | --- | --- |
-| `src/Root.tsx` | Route switch: `/`, `/checkout`, `/journal`, `/journal/ciwidey-natural`. The router is `src/lib/router.tsx` (pushState, no dependency) |
+| `src/Root.tsx` | Route switch: `/`, `/checkout`, `/order-received`, `/journal`, `/journal/<slug>`. The router is `src/lib/router.tsx` (pushState, no dependency) |
 | `src/App.tsx` | Home page. Copy is currently inline; extract it to `src/content/copy.ts` first (BRIEF G6) |
 | `src/components/CinematicVideo.tsx` | Scroll-scrubbed background video: rAF-eased seeks, cached section tops, HLS + MP4. **Keep it.** Section progress comes from `[data-video-section]` elements |
 | `public/media/scrub/*.mp4` | All-keyframe 1080p/720p encodes made for scrubbing. See `docs/video-scrub.md` |
 | `src/data/shop.ts` | Product, batches (sample data), grinds, shipping, currencies. Single source of truth for prices |
 | `src/pages/CheckoutPage.tsx` | Dummy checkout (no real payment, stores nothing) |
-| `src/pages/JournalPage.tsx` | Journal index + researched article. Evidence notes are in `docs/research/` |
+| `src/pages/JournalPage.tsx`, `src/data/journal.ts` | Journal index + the researched static article (evidence notes in `docs/research/`), plus articles written as WordPress posts, fetched from `wp/v2/posts` and rendered at `/journal/<slug>` after an allowlist sanitiser. `sawargi-headless.php` redirects WordPress's own post pages there |
 | `src/data/catalog.ts`, `src/lib/catalog.tsx` | The catalogue the site renders: sample data, or live batches/stock from WooCommerce when `VITE_WC_URL` is set |
 | `wordpress/mu-plugins/sawargi-headless.php` | WordPress plugin: batch fields in WP admin + `extensions.sawargi` on the Store API. Contract-tested by `src/data/contract.test.ts` |
 | `wordpress/mu-plugins/sawargi-checkout.php` | Dresses WooCommerce's checkout, cart, order-received and account pages in the site's look (theme-agnostic CSS on `wc-block-*` classes + a Sawargi header via `wp_body_open`). The whole `mu-plugins/` folder is mounted, so new plugins deploy automatically |
+| `wordpress/mu-plugins/sawargi-order-received.php`, `src/pages/OrderReceivedPage.tsx` | After a bank-transfer (offline) order, WooCommerce's order-received page redirects to the site's `/order-received?order&key`, which reads the order through a key-protected `sawargi/v1/order-received` endpoint. Online gateways keep WooCommerce's page |
 | `deploy/` | VPS stack under `website.taufikandrian.my.id/sawargi-coffee` (WordPress at `/sawargi-coffee/shop`): Caddy (reached as `sawargi-caddy:80` on the front proxy's Docker network `PROXY_NETWORK`; the VPS front proxy is the `n8n-caddy-1` container) + WordPress (PHP-FPM) + MariaDB via Docker Compose, plus build/bootstrap/backup scripts. Guide: `docs/cms/WORDPRESS.md` |
 | `.github/workflows/deploy.yml`, `deploy/remote-deploy.sh`, `deploy/setup-remote-deploy.sh` | CI on every PR; on `main`, build on GitHub and deploy to the VPS over SSH (a forced-command key runs `remote-deploy.sh`; `check` = preflight only). Setup runbook: `docs/cms/REMOTE-DEPLOY.md` |
 | `deploy/add-batch.sh`, `deploy/batches/` | Create a batch in WooCommerce from a filled-in batch file (`TEMPLATE.env`). Batch facts come from Taufik; never fill them from the sample data |
-| `deploy/backup.sh`, `install-backup-cron.sh`, `verify-backup.sh` | Nightly DB + uploads backup (checked, with an encrypted off-server copy via rclone `BACKUP_REMOTE`) and a restore drill into a throwaway MariaDB. Guide: `docs/cms/BACKUPS.md` |
+| `deploy/backup.sh`, `install-backup-cron.sh`, `verify-backup.sh`, `setup-backup-remote.sh` | Nightly DB + uploads backup (checked, with an encrypted off-server copy via rclone `BACKUP_REMOTE`) and a restore drill into a throwaway MariaDB. Guide: `docs/cms/BACKUPS.md` |
 | `src/lib/basePath.ts` | `withBase`/`stripBase`/`asset`: the site can be built under a path (`SITE_BASE_PATH`). Never hard-code `/media/...` or route hrefs outside `Link`/`asset()` |
 
 ## Rules

@@ -27,11 +27,24 @@ cd /opt/sawargi-coffee && git pull
 ./deploy/verify-backup.sh           # restore drill (below): should end with "verify: OK"
 ```
 
-## 2. Copy them off the server, encrypted (15 minutes, once)
+## 2. Copy them off the server, encrypted (10 minutes, once)
 
 The backups contain customers' names, addresses and phone numbers, so they go off the server
-**encrypted**. [rclone](https://rclone.org) does both. Below it uses Google Drive (15 GB free);
-any rclone backend works the same way (Cloudflare R2, Backblaze B2, S3…).
+**encrypted**. [rclone](https://rclone.org) handles both the copy and the encryption.
+
+**The quick way:** one script does everything except signing in to Google:
+```bash
+./deploy/setup-backup-remote.sh
+```
+1. It asks you to run `rclone authorize "drive"` on your Mac (`brew install rclone` first). Sign
+   in with the Google account that should hold the backups, then paste the token line it prints.
+2. It creates the encrypted remote with two generated passwords and **shows them once**. Put them
+   in your password manager before typing `saved`.
+3. It sets `BACKUP_REMOTE=sawargi-crypt:` in `deploy/.env` and runs a backup, which should end
+   with `copied off-server`.
+
+**By hand:** the steps below do the same thing. They use Google Drive (15 GB free); any rclone
+backend works the same way (Cloudflare R2, Backblaze B2, S3…).
 
 **On the VPS:**
 ```bash

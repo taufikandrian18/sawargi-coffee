@@ -37,7 +37,8 @@ still works (it redirects).
 | Orders, refunds, customers | WP admin → WooCommerce → Orders |
 | Shipping rates | WP admin → WooCommerce → Settings → Shipping |
 | Payments (QRIS, virtual accounts, cards) | A WooCommerce payment plugin, e.g. Midtrans or Xendit |
-| Marketing copy, journal articles | Still in this repo (`src/content/copy.ts`, `src/pages/JournalPage.tsx`) |
+| Journal articles | WP admin → Posts → Add New (see "Writing a journal article" below) |
+| Marketing copy, the first journal article ("Dried in the Fruit") | Still in this repo (`src/content/copy.ts`, `src/pages/JournalPage.tsx`) |
 
 ## Why checkout happens on WooCommerce
 
@@ -50,6 +51,15 @@ WooCommerce's checkout, cart, order-received and account pages in the site's loo
 - cherry pill buttons;
 - Big Shoulders, Readex Pro and IBM Plex Mono;
 - a Sawargi header with a way back to the site, replacing the theme's own header.
+
+After a **bank transfer** order (or cheque or cash on delivery), WooCommerce sends the buyer back
+to the designed site's `/order-received` page. It shows the order, the amount to transfer, your bank
+accounts and the payment reference, all taken from **WooCommerce → Settings → Payments → Direct
+bank transfer**, so fill in your accounts there.
+
+Online gateways like Midtrans or Xendit keep WooCommerce's own (styled) page, because they often
+finish their work there. `wordpress/mu-plugins/sawargi-order-received.php` holds the list of
+payment methods that come back to the site.
 
 It targets WooCommerce's own class names, so it works with whichever theme is active. If a
 WooCommerce update changes the checkout markup and something looks off, the fix belongs in that
@@ -154,6 +164,22 @@ it goes live. After that, stock falls with paid orders; change it by hand in WP 
 Sold out: stock reaches 0 automatically as paid orders come in, or set it by hand. The site shows
 the batch as sold out and blocks it at checkout.
 
+### Writing a journal article
+
+**Posts → Add New** in WP admin. Each published post becomes an article on the site:
+
+- It's listed on `/journal` with the static "Dried in the Fruit", newest first.
+- It's readable at `/journal/<slug>`. The slug is the post's permalink, so set it in the post
+  settings before publishing.
+- The index shows the **excerpt** under the title. Write one in the post settings, or WordPress uses
+  the opening words.
+- The article uses headings (H2–H4), paragraphs, lists, bold and italic, links, quotes, images with
+  captions, and separators. Anything else (embeds, buttons, columns, colours, scripts) is stripped
+  when the site renders it, so the layout stays the site's. Featured images aren't shown.
+- **Preview** shows the draft in WordPress's own theme. Only published posts reach the site, and
+  opening a published post in WordPress sends you to the site.
+- Keep the journal's rule: every claim gets a source. Put sources as a numbered list at the end.
+
 ## 4. Payments
 
 WooCommerce → Settings → Payments. Install a gateway plugin from Plugins → Add New (search
@@ -235,6 +261,11 @@ Verified in development: the site's mapping and hand-off (unit tests with Store 
 the plugin's PHP (syntax check and a stubbed run), `docker compose config`, and a production build
 under `/sawargi-coffee` in a browser behind a server that mimics the Caddyfile's routes (assets, video
 range requests, deep links, hand-off URL, the wp-admin redirect).
+
+The order-received page and the WordPress journal were checked the same way: their PHP ran against
+stubbed WordPress functions, and the site's pages were checked in a browser against stubbed API
+answers. After deploying, place one bank-transfer order and publish one test post to confirm both
+on the real shop.
 
 **Not yet verified against a live WordPress** (the build environment couldn't download
 WordPress): the Store API extension registering on a real WooCommerce, the `add-to-cart` hand-off
