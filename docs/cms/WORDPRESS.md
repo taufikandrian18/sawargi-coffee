@@ -51,6 +51,15 @@ WooCommerce's checkout, cart, order-received and account pages in the site's loo
 - Big Shoulders, Readex Pro and IBM Plex Mono;
 - a Sawargi header with a way back to the site, replacing the theme's own header.
 
+After a **bank transfer** order (or cheque or cash on delivery), WooCommerce sends the buyer back
+to the designed site's `/order-received` page. It shows the order, the amount to transfer, your bank
+accounts and the payment reference, all taken from **WooCommerce → Settings → Payments → Direct
+bank transfer**, so fill in your accounts there.
+
+Online gateways like Midtrans or Xendit keep WooCommerce's own (styled) page, because they often
+finish their work there. `wordpress/mu-plugins/sawargi-order-received.php` holds the list of
+payment methods that come back to the site.
+
 It targets WooCommerce's own class names, so it works with whichever theme is active. If a
 WooCommerce update changes the checkout markup and something looks off, the fix belongs in that
 file, not in the theme.

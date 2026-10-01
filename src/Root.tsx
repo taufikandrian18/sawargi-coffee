@@ -6,6 +6,7 @@ import { CatalogProvider } from './lib/catalog'
 import { usePathname } from './lib/router'
 import { useSmoothScroll } from './lib/smoothScroll'
 import { CheckoutPage } from './pages/CheckoutPage'
+import { OrderReceivedPage } from './pages/OrderReceivedPage'
 import { ARTICLE, JournalArticlePage, JournalIndexPage } from './pages/JournalPage'
 
 // Dev-only gallery for eyeballing the redesign primitives. Vite replaces
@@ -14,6 +15,7 @@ const PrimitivesPage = import.meta.env.DEV ? lazy(() => import('./pages/Primitiv
 
 function Page({ pathname }: { pathname: string }) {
   if (pathname === '/checkout') return <CheckoutPage />
+  if (pathname === '/order-received') return <OrderReceivedPage />
   if (pathname === '/journal') return <JournalIndexPage />
   if (pathname === `/journal/${ARTICLE.slug}`) return <JournalArticlePage />
   if (PrimitivesPage && pathname === '/__primitives') {
