@@ -48,7 +48,7 @@ you've seen a screenshot.
 | `deploy/` | VPS stack under `website.taufikandrian.my.id/sawargi-coffee` (WordPress at `/sawargi-coffee/shop`): Caddy (reached as `sawargi-caddy:80` on the front proxy's Docker network `PROXY_NETWORK`; the VPS front proxy is the `n8n-caddy-1` container) + WordPress (PHP-FPM) + MariaDB via Docker Compose, plus build/bootstrap/backup scripts. Guide: `docs/cms/WORDPRESS.md` |
 | `.github/workflows/deploy.yml`, `deploy/remote-deploy.sh`, `deploy/setup-remote-deploy.sh` | CI on every PR; on `main`, build on GitHub and deploy to the VPS over SSH (a forced-command key runs `remote-deploy.sh`; `check` = preflight only). Setup runbook: `docs/cms/REMOTE-DEPLOY.md` |
 | `deploy/add-batch.sh`, `deploy/batches/` | Create a batch in WooCommerce from a filled-in batch file (`TEMPLATE.env`). Batch facts come from Taufik; never fill them from the sample data |
-| `deploy/backup.sh`, `install-backup-cron.sh`, `verify-backup.sh` | Nightly DB + uploads backup (checked, with an encrypted off-server copy via rclone `BACKUP_REMOTE`) and a restore drill into a throwaway MariaDB. Guide: `docs/cms/BACKUPS.md` |
+| `deploy/backup.sh`, `install-backup-cron.sh`, `verify-backup.sh`, `setup-backup-remote.sh` | Nightly DB + uploads backup (checked, with an encrypted off-server copy via rclone `BACKUP_REMOTE`) and a restore drill into a throwaway MariaDB. Guide: `docs/cms/BACKUPS.md` |
 | `src/lib/basePath.ts` | `withBase`/`stripBase`/`asset`: the site can be built under a path (`SITE_BASE_PATH`). Never hard-code `/media/...` or route hrefs outside `Link`/`asset()` |
 
 ## Rules
