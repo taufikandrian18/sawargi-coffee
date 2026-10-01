@@ -55,7 +55,9 @@ services:
         define('DISALLOW_FILE_EDIT', true);
     volumes:
       - wp_data:/srv/wp${BASE_PATH}/shop
-      - ../wordpress/mu-plugins/sawargi-headless.php:/srv/wp${BASE_PATH}/shop/wp-content/mu-plugins/sawargi-headless.php:ro
+      # The whole folder, so new and updated must-use plugins arrive with every deploy
+      # (a single-file bind mount keeps showing the old file after git replaces it).
+      - ../wordpress/mu-plugins:/srv/wp${BASE_PATH}/shop/wp-content/mu-plugins:ro
       - ./php-uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
     depends_on:
       - db
@@ -93,7 +95,9 @@ services:
         define('WP_SITEURL', '${PUBLIC_URL}${BASE_PATH}/shop');
     volumes:
       - wp_data:/srv/wp${BASE_PATH}/shop
-      - ../wordpress/mu-plugins/sawargi-headless.php:/srv/wp${BASE_PATH}/shop/wp-content/mu-plugins/sawargi-headless.php:ro
+      # The whole folder, so new and updated must-use plugins arrive with every deploy
+      # (a single-file bind mount keeps showing the old file after git replaces it).
+      - ../wordpress/mu-plugins:/srv/wp${BASE_PATH}/shop/wp-content/mu-plugins:ro
       - ./add-batch.php:/deploy/add-batch.php:ro
     depends_on:
       - db

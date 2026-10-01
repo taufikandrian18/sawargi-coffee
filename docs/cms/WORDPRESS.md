@@ -42,9 +42,18 @@ still works (it redirects).
 ## Why checkout happens on WooCommerce
 
 Indonesian payment plugins are built for WooCommerce's own checkout page. Handing off there means
-every plugin, every payment method and every plugin update just works. The cost: the checkout
-page uses your WordPress theme, not this site's design. Pick a clean theme (Storefront or a block
-theme) and set its colours to the brand tokens (`#0c0a08` ink, `#ece6da` paper, `#b33f2d` cherry).
+every plugin, every payment method and every plugin update just works.
+
+The checkout still looks like the site. `wordpress/mu-plugins/sawargi-checkout.php` dresses
+WooCommerce's checkout, cart, order-received and account pages in the site's look:
+- the ink background, with paper cards in the batch-ticket shadow;
+- cherry pill buttons;
+- Big Shoulders, Readex Pro and IBM Plex Mono;
+- a Sawargi header with a way back to the site, replacing the theme's own header.
+
+It targets WooCommerce's own class names, so it works with whichever theme is active. If a
+WooCommerce update changes the checkout markup and something looks off, the fix belongs in that
+file, not in the theme.
 
 ## 1. The VPS
 
