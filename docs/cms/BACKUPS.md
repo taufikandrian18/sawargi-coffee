@@ -75,6 +75,62 @@ rclone ls sawargi-crypt:         # lists the decrypted names
 rclone ls gdrive:sawargi-backups # Google only sees scrambled names
 ```
 
+### Use a dedicated Google account and your own client ID
+
+Two things the setup above leaves you with need fixing:
+
+- **rclone's shared Google client is being retired during 2026.** When Google turns it off, the
+  off-server copy stops and the backup fails after saving locally. rclone warns with "This remote
+  uses rclone's shared Google Drive client_id".
+- **Scope `drive` gives the server your whole Google Drive.** If anything on the VPS is
+  compromised, every file in that Drive is exposed. So sign rclone in with a **Google account used
+  only for backups** (a new free Gmail), not your personal one.
+
+**Your own client ID (Google Cloud Console, about 15 minutes):**
+1. Create a project and enable **Google Drive API** (APIs & Services → Library).
+2. **Google Auth Platform → Branding:** app name and support email. Links can stay empty; if
+   Google insists, use the shop's privacy policy page (`…/sawargi-coffee/shop/privacy-policy/`).
+3. **Audience:** type **External**, add the backup account as a test user, then **Publish app**.
+   An app left in *Testing* has its login expire after 7 days, and the nightly copy breaks
+   silently.
+4. **Clients → Create client → Desktop app.** Put the client ID and secret in your password manager.
+
+**Point rclone at it (on the VPS):**
+1. `rclone config` → `e` → `gdrive` → paste client ID and secret → keep scope `drive` → advanced `n`.
+2. Refresh the token: answer **`y`** to "refresh?". For the login, choose one of these:
+   - **Tunnel:** connect with `ssh -L 53682:127.0.0.1:53682 ubuntu@<vps>`, answer **`y`** to
+     auto config and open the printed link on your Mac.
+   - **No tunnel:** answer **`n`**, run the printed `rclone authorize "drive" "eyJ…"` on your Mac,
+     and paste the result back.
+3. In the browser, sign in with the **backup account**. On "Google hasn't verified this app", click
+   **Advanced → Go to … (unsafe)**. The blue **"Back to safety"** button cancels the login, and
+   rclone reports "No code returned". Tick the Google Drive permission, then **Continue**.
+4. Check: `rclone lsd gdrive:` shows no client_id notice, and `./deploy/backup.sh` ends with
+   `copied off-server`. The crypt passwords don't change.
+
+Later, you can re-sign in to the same remote with `rclone config reconnect gdrive:`.
+
+Troubleshooting:
+- **`Error 403: access_denied`:** the app is still in Testing and the account isn't a test user.
+- **`bind: address already in use` on 53682:** an old tunnel or `rclone authorize` holds the port.
+  Find it with `lsof -nP -iTCP:53682 -sTCP:LISTEN` (Mac) or `sudo ss -ltnp 'sport = :53682'`
+  (VPS), then close it.
+- **Repeated `channel 3: open failed`:** the tunnel has nothing to forward to (rclone isn't
+  listening). It's harmless once rclone has printed "Got code".
+
+### Prove the passwords work without the server
+
+The server's rclone config holds the keys; if the server dies, only your password manager does.
+Prove it once, from your Mac:
+1. `rclone config` → new remote `gdrive` (same account) → new remote `sawargi-crypt`: crypt,
+   `gdrive:sawargi-backups`, standard, directory names `true`. For both passwords choose
+   **"type in my own"** and paste from the password manager.
+2. `rclone ls sawargi-crypt:` must list readable `db-…`/`uploads-…` names.
+   "Skipping undecryptable file name: bad PKCS#7 padding" means a wrong password or salt.
+   Compare with the server's: `rclone reveal` on each `password`/`password2` value in
+   `~/.config/rclone/rclone.conf`.
+3. `rclone cat sawargi-crypt:db-STAMP.sql.gz | gunzip | head -c 300` shows `-- MariaDB dump`.
+
 ## 3. Restore drill (monthly, 1 minute)
 
 ```bash
