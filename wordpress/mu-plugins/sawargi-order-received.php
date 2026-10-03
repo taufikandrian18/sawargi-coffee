@@ -35,6 +35,14 @@ function sawargi_order_for_key( int $order_id, string $key ) {
 }
 
 /** @return array<string, mixed> */
+/**
+ * Plain text for the site to render as text. WooCommerce stores settings run through kses, so
+ * "Lainnya' > 'Transfer'" arrives as "&gt;"; line breaks are kept, they carry the steps' layout.
+ */
+function sawargi_plain_text( string $value ): string {
+	return trim( html_entity_decode( wp_strip_all_tags( $value ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+}
+
 function sawargi_order_summary( $order ): array {
 	$items = array();
 	foreach ( $order->get_items() as $item ) {
@@ -73,18 +81,18 @@ function sawargi_order_summary( $order ): array {
 	if ( 'bacs' === $order->get_payment_method() ) {
 		foreach ( (array) get_option( 'woocommerce_bacs_accounts', array() ) as $account ) {
 			$summary['bank_accounts'][] = array(
-				'bank_name'      => (string) ( $account['bank_name'] ?? '' ),
-				'account_name'   => (string) ( $account['account_name'] ?? '' ),
-				'account_number' => (string) ( $account['account_number'] ?? '' ),
-				'sort_code'      => (string) ( $account['sort_code'] ?? '' ),
-				'iban'           => (string) ( $account['iban'] ?? '' ),
-				'bic'            => (string) ( $account['bic'] ?? '' ),
+				'bank_name'      => sawargi_plain_text( (string) ( $account['bank_name'] ?? '' ) ),
+				'account_name'   => sawargi_plain_text( (string) ( $account['account_name'] ?? '' ) ),
+				'account_number' => sawargi_plain_text( (string) ( $account['account_number'] ?? '' ) ),
+				'sort_code'      => sawargi_plain_text( (string) ( $account['sort_code'] ?? '' ) ),
+				'iban'           => sawargi_plain_text( (string) ( $account['iban'] ?? '' ) ),
+				'bic'            => sawargi_plain_text( (string) ( $account['bic'] ?? '' ) ),
 			);
 		}
 	}
 	$settings = get_option( 'woocommerce_' . $order->get_payment_method() . '_settings', array() );
 	if ( is_array( $settings ) && ! empty( $settings['instructions'] ) ) {
-		$summary['instructions'] = wp_strip_all_tags( (string) $settings['instructions'] );
+		$summary['instructions'] = sawargi_plain_text( (string) $settings['instructions'] );
 	}
 
 	return $summary;

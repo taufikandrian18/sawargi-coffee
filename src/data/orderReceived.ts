@@ -74,3 +74,60 @@ export function formatOrderMoney(amount: number, currency: string) {
     return `${currency} ${amount}`
   }
 }
+
+export type InstructionStep = { text: string; sub: string[] }
+export type InstructionBlock =
+  | { kind: 'text'; text: string; lead: boolean }
+  | { kind: 'steps'; start: number; items: InstructionStep[] }
+  | { kind: 'bullets'; items: string[] }
+  | { kind: 'rule' }
+
+/**
+ * Turns the shop's payment instructions (a plain textarea in WooCommerce) into blocks: numbered
+ * steps, "- " sub-points under the step above them, separator lines and paragraphs. Text typed
+ * on one line is split at "Option N:", numbered steps, " - " points and dashed rules first.
+ */
+export function parseInstructions(raw: string): InstructionBlock[] {
+  let text = raw.replace(/\r\n?/g, '\n').trim()
+  if (!text.includes('\n')) {
+    text = text
+      .replace(/\s*(-{3,}|_{3,}|={3,})\s*/g, '\n$1\n')
+      .replace(/\s+(Option \d+\s*:)/gi, '\n$1')
+      .replace(/\s+(\d{1,2}[.)])\s+(?=[A-Z'‘"“])/g, '\n$1 ')
+      .replace(/\s+-\s+(?=[A-Z'‘"“])/g, '\n- ')
+  }
+
+  const blocks: InstructionBlock[] = []
+  const last = () => blocks[blocks.length - 1]
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim()
+    if (!line) {
+      blocks.push({ kind: 'text', text: '', lead: false })
+      continue
+    }
+    if (/^([-_=*])\1{2,}$/.test(line)) {
+      blocks.push({ kind: 'rule' })
+      continue
+    }
+    const step = /^(\d{1,2})[.)]\s+(.+)$/.exec(line)
+    if (step) {
+      const current = last()
+      if (current?.kind === 'steps') current.items.push({ text: step[2], sub: [] })
+      else blocks.push({ kind: 'steps', start: Number(step[1]), items: [{ text: step[2], sub: [] }] })
+      continue
+    }
+    const point = /^[-*•]\s+(.+)$/.exec(line)
+    if (point) {
+      const current = last()
+      if (current?.kind === 'steps') current.items[current.items.length - 1].sub.push(point[1])
+      else if (current?.kind === 'bullets') current.items.push(point[1])
+      else blocks.push({ kind: 'bullets', items: [point[1]] })
+      continue
+    }
+    const letters = line.replace(/[^A-Za-z]/g, '')
+    const lead = /:$/.test(line) || /^Option \d+/i.test(line) || (letters.length > 3 && letters === letters.toUpperCase())
+    blocks.push({ kind: 'text', text: line, lead })
+  }
+  // Blank lines only separate lists; drop them as blocks.
+  return blocks.filter((block) => !(block.kind === 'text' && block.text === ''))
+}

@@ -205,6 +205,48 @@ body.sawargi-shop .wc-block-cart__sidebar {
 	align-self: start;
 }
 
+/*
+ * Two columns with a real gap. WooCommerce makes its gutter from the columns' own padding (main
+ * 65% + padding-right, sidebar 35% + padding-left); the cards above replace that padding, so the
+ * columns would touch. A grid gives the gap back and a wider, steady order summary.
+ */
+body.sawargi-shop .wc-block-components-sidebar-layout {
+	display: flex !important;
+	flex-direction: column;
+	gap: 0;
+}
+body.sawargi-shop .wc-block-components-sidebar-layout > .wc-block-components-main,
+body.sawargi-shop .wc-block-components-sidebar-layout > .wc-block-components-sidebar {
+	width: 100% !important;
+	margin-inline: 0 !important;
+}
+@media (min-width: 900px) {
+	body.sawargi-shop .wc-block-components-sidebar-layout {
+		display: grid !important;
+		grid-template-columns: minmax(0, 1fr) clamp(320px, 34vw, 440px);
+		column-gap: clamp(2rem, 3.5vw, 3rem);
+		align-items: start;
+	}
+	/* Notices and anything else WooCommerce puts in the layout span both columns. */
+	body.sawargi-shop .wc-block-components-sidebar-layout > :not(.wc-block-components-main):not(.wc-block-components-sidebar) {
+		grid-column: 1 / -1;
+	}
+	body.sawargi-shop .wc-block-components-sidebar-layout > .wc-block-components-sidebar {
+		width: auto !important;
+		position: sticky;
+		top: 1.5rem;
+	}
+	body.sawargi-shop .wc-block-components-sidebar-layout > .wc-block-components-main {
+		width: auto !important;
+	}
+}
+/* The summary already sits on a card; drop WooCommerce's own frame inside it. */
+body.sawargi-shop .wc-block-checkout__sidebar .wp-block-woocommerce-checkout-order-summary-block,
+body.sawargi-shop .wc-block-cart__sidebar .wp-block-woocommerce-cart-order-summary-block {
+	border: 0 !important;
+	border-radius: 0 !important;
+}
+
 /* Headings inside the cards. */
 body.sawargi-shop .wc-block-components-title,
 body.sawargi-shop .wc-block-components-checkout-step__title,

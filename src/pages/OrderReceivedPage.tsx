@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 import { SiteHeader } from '../components/SiteHeader'
 import { InkButton } from '../components/ui/InkButton'
 import type { OrderRef, ReceivedOrder } from '../data/orderReceived'
-import { fetchReceivedOrder, formatOrderMoney, orderRefFromSearch, wooOrderReceivedUrl } from '../data/orderReceived'
+import {
+  fetchReceivedOrder,
+  formatOrderMoney,
+  orderRefFromSearch,
+  parseInstructions,
+  wooOrderReceivedUrl
+} from '../data/orderReceived'
 import { useCatalog } from '../lib/useCatalog'
 
 type State =
@@ -35,7 +41,7 @@ export function OrderReceivedPage({ fetchImpl }: { fetchImpl?: typeof fetch }) {
   return (
     <div className="min-h-screen bg-ink text-paper">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-16 md:px-8 md:py-24">
+      <main className="mx-auto max-w-3xl px-4 py-16 md:px-8 md:py-24 lg:max-w-6xl">
         <p className="font-plex text-[0.8125rem] uppercase tracking-[0.18em] text-paper-mut">order received</p>
         {state.status === 'loading' && (
           <p role="status" className="mt-8 font-plex text-sm uppercase tracking-[0.08em] text-paper-mut">
@@ -79,6 +85,47 @@ function OrderDetails({ order }: { order: ReceivedOrder }) {
     : null
   const payNow = order.needs_payment && order.bank_accounts.length > 0
 
+  const summary = (
+    <section aria-labelledby="summary-title" className="rounded-[2rem] border border-paper/15 p-6 md:p-8">
+      <h2 id="summary-title" className="font-plex text-[0.8125rem] uppercase tracking-[0.18em] text-paper-mut">
+        Your order
+      </h2>
+      <ul className="mt-4 divide-y divide-paper/10">
+        {order.items.map((item, index) => (
+          <li key={index} className="flex justify-between gap-4 py-4">
+            <div>
+              <p>{item.name}</p>
+              <p className="mt-1 text-sm text-paper-mut">
+                {[`× ${item.quantity}`, ...item.details.map((d) => `${d.label}: ${d.value}`)].join(' · ')}
+              </p>
+            </div>
+            <p className="shrink-0 font-plex tabular-nums">{money(item.total)}</p>
+          </li>
+        ))}
+      </ul>
+      <dl className="mt-4 space-y-2 border-t border-paper/10 pt-4 font-plex text-sm">
+        <div className="flex justify-between gap-4">
+          <dt className="text-paper-mut">Shipping</dt>
+          <dd className="tabular-nums">{money(order.shipping_total)}</dd>
+        </div>
+        <div className="flex justify-between gap-4 text-base">
+          <dt>Total</dt>
+          <dd className="tabular-nums">{money(order.total)}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-paper-mut">Payment</dt>
+          <dd className="text-right">{order.payment_title}</dd>
+        </div>
+      </dl>
+    </section>
+  )
+
+  const back = (
+    <InkButton href="/" variant="paper">
+      Back to Sawargi
+    </InkButton>
+  )
+
   return (
     <>
       <h1 className="display-chapter mt-4">Thank you</h1>
@@ -87,71 +134,99 @@ function OrderDetails({ order }: { order: ReceivedOrder }) {
         {date ? ` · ${date}` : ''} · {order.status_label}
       </p>
 
-      {payNow && (
-        <section aria-labelledby="pay-title" className="mt-10 rounded-[2rem] bg-paper p-6 text-char shadow-[8px_8px_0_var(--cherry)] md:p-8">
-          <h2 id="pay-title" className="display-step">
-            Transfer {money(order.total)}
-          </h2>
-          {order.instructions && <p className="mt-3 text-ink-mut">{order.instructions}</p>}
-          <ul className="mt-6 space-y-4">
-            {order.bank_accounts.map((account) => (
-              <li key={`${account.bank_name}-${account.account_number}`} className="rounded-2xl border border-char/15 p-4">
-                <p className="font-plex text-xs uppercase tracking-[0.12em] text-ink-mut">{account.bank_name}</p>
-                <p className="mt-2 flex flex-wrap items-center gap-3 font-plex text-2xl tabular-nums">
-                  {account.account_number}
-                  <CopyButton value={account.account_number} label={`Copy ${account.bank_name} account number`} />
-                </p>
-                <p className="mt-1 text-sm text-ink-mut">{account.account_name}</p>
-                {account.iban && <p className="mt-1 font-plex text-xs text-ink-mut">IBAN {account.iban}</p>}
-                {account.bic && <p className="mt-1 font-plex text-xs text-ink-mut">BIC/SWIFT {account.bic}</p>}
+      {payNow ? (
+        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
+          <section
+            aria-labelledby="pay-title"
+            className="rounded-[2rem] bg-paper p-6 text-char shadow-[8px_8px_0_var(--cherry)] md:p-10"
+          >
+            <h2 id="pay-title" className="display-step">
+              Transfer {money(order.total)}
+            </h2>
+            <p className="mt-3 text-ink-mut">
+              {order.bank_accounts.length > 1 ? 'To one of these accounts' : 'To this account'}, with your order number as
+              the reference.
+            </p>
+            <ul className="mt-6 space-y-4">
+              {order.bank_accounts.map((account) => (
+                <li key={`${account.bank_name}-${account.account_number}`} className="rounded-2xl border border-char/15 p-4 md:p-5">
+                  <p className="font-plex text-xs uppercase tracking-[0.12em] text-ink-mut">{account.bank_name}</p>
+                  <p className="mt-2 flex flex-wrap items-center gap-3 font-plex text-2xl tabular-nums">
+                    {account.account_number}
+                    <CopyButton value={account.account_number} label={`Copy ${account.bank_name} account number`} />
+                  </p>
+                  <p className="mt-1 text-sm text-ink-mut">{account.account_name}</p>
+                  {account.iban && <p className="mt-1 font-plex text-xs text-ink-mut">IBAN {account.iban}</p>}
+                  {account.bic && <p className="mt-1 font-plex text-xs text-ink-mut">BIC/SWIFT {account.bic}</p>}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-char/5 px-4 py-3 font-plex text-sm md:px-5">
+              Payment reference: <strong className="text-lg tabular-nums">{order.number}</strong>
+              <CopyButton value={order.number} label="Copy payment reference" />
+            </p>
+            {order.instructions && (
+              <div className="mt-8 border-t border-char/15 pt-6">
+                <h3 className="font-plex text-[0.8125rem] uppercase tracking-[0.18em] text-ink-mut">How to transfer</h3>
+                <PaymentInstructions text={order.instructions} />
+              </div>
+            )}
+          </section>
+          <div className="space-y-8 lg:sticky lg:top-28">
+            {summary}
+            {back}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-10 max-w-3xl space-y-10">
+          {summary}
+          {back}
+        </div>
+      )}
+    </>
+  )
+}
+
+/** The shop's payment instructions, laid out as the steps they are. */
+function PaymentInstructions({ text }: { text: string }) {
+  return (
+    <div className="mt-4 space-y-4 text-[0.9375rem] leading-relaxed text-char">
+      {parseInstructions(text).map((block, index) => {
+        if (block.kind === 'rule') return <hr key={index} className="border-char/15" />
+        if (block.kind === 'text') {
+          return (
+            <p key={index} className={block.lead ? 'font-medium' : 'text-ink-mut'}>
+              {block.text}
+            </p>
+          )
+        }
+        if (block.kind === 'bullets') {
+          return (
+            <ul key={index} className="list-disc space-y-1.5 pl-5 marker:text-cherry">
+              {block.items.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          )
+        }
+        return (
+          <ol key={index} start={block.start} className="list-decimal space-y-2 pl-6 marker:font-plex marker:text-cherry">
+            {block.items.map((item, i) => (
+              <li key={i} className="pl-1">
+                {item.text}
+                {item.sub.length > 0 && (
+                  <ul className="mt-1.5 list-disc space-y-1 pl-5 text-ink-mut marker:text-char/40">
+                    {item.sub.map((sub, j) => (
+                      <li key={j}>{sub}</li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
-          </ul>
-          <p className="mt-6 font-plex text-sm">
-            Payment reference: <strong>{order.number}</strong>
-          </p>
-        </section>
-      )}
-
-      <section aria-labelledby="summary-title" className="mt-10 rounded-[2rem] border border-paper/15 p-6 md:p-8">
-        <h2 id="summary-title" className="font-plex text-[0.8125rem] uppercase tracking-[0.18em] text-paper-mut">
-          Your order
-        </h2>
-        <ul className="mt-4 divide-y divide-paper/10">
-          {order.items.map((item, index) => (
-            <li key={index} className="flex justify-between gap-4 py-4">
-              <div>
-                <p>{item.name}</p>
-                <p className="mt-1 text-sm text-paper-mut">
-                  {[`× ${item.quantity}`, ...item.details.map((d) => `${d.label}: ${d.value}`)].join(' · ')}
-                </p>
-              </div>
-              <p className="shrink-0 font-plex tabular-nums">{money(item.total)}</p>
-            </li>
-          ))}
-        </ul>
-        <dl className="mt-4 space-y-2 border-t border-paper/10 pt-4 font-plex text-sm">
-          <div className="flex justify-between">
-            <dt className="text-paper-mut">Shipping</dt>
-            <dd className="tabular-nums">{money(order.shipping_total)}</dd>
-          </div>
-          <div className="flex justify-between text-base">
-            <dt>Total</dt>
-            <dd className="tabular-nums">{money(order.total)}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-paper-mut">Payment</dt>
-            <dd>{order.payment_title}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <div className="mt-10">
-        <InkButton href="/" variant="paper">
-          Back to Sawargi
-        </InkButton>
-      </div>
-    </>
+          </ol>
+        )
+      })}
+    </div>
   )
 }
 

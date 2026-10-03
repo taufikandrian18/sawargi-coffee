@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReceivedOrder } from '../data/orderReceived'
-import { orderRefFromSearch, wooOrderReceivedUrl } from '../data/orderReceived'
+import { orderRefFromSearch, parseInstructions, wooOrderReceivedUrl } from '../data/orderReceived'
 import { CatalogProvider } from '../lib/catalog'
 import { OrderReceivedPage } from './OrderReceivedPage'
 
@@ -86,5 +86,72 @@ describe('order received', () => {
     renderAt('', orderFetch as unknown as typeof fetch)
     expect(screen.getByRole('heading', { name: 'No order to show' })).toBeInTheDocument()
     expect(orderFetch).not.toHaveBeenCalled()
+  })
+})
+
+const STEPS = [
+  'BANK TRANSFER INSTRUCTIONS',
+  'Option 1: Using the mobile app',
+  '1. Log in to the app.',
+  '2. Enter the details:',
+  '- Same bank: type the account number.',
+  '- Other banks: pick the bank first.',
+  '3. Confirm with your PIN.',
+  '----------',
+  'Option 2: At an ATM',
+  "1. Choose 'Other' > 'Transfer'.",
+  '2. Take your receipt.'
+]
+
+describe('payment instructions', () => {
+  const expected = [
+    { kind: 'text', text: 'BANK TRANSFER INSTRUCTIONS', lead: true },
+    { kind: 'text', text: 'Option 1: Using the mobile app', lead: true },
+    {
+      kind: 'steps',
+      start: 1,
+      items: [
+        { text: 'Log in to the app.', sub: [] },
+        { text: 'Enter the details:', sub: ['Same bank: type the account number.', 'Other banks: pick the bank first.'] },
+        { text: 'Confirm with your PIN.', sub: [] }
+      ]
+    },
+    { kind: 'rule' },
+    { kind: 'text', text: 'Option 2: At an ATM', lead: true },
+    {
+      kind: 'steps',
+      start: 1,
+      items: [
+        { text: "Choose 'Other' > 'Transfer'.", sub: [] },
+        { text: 'Take your receipt.', sub: [] }
+      ]
+    }
+  ]
+
+  it('turns typed lines into steps, sub-points, rules and headings', () => {
+    expect(parseInstructions(STEPS.join('\r\n'))).toEqual(expected)
+  })
+
+  it('finds the same structure when everything was typed on one line', () => {
+    expect(parseInstructions(STEPS.join(' '))).toEqual(expected)
+  })
+
+  it('leaves plain prose as one paragraph', () => {
+    expect(parseInstructions('Use your order number as the payment reference.')).toEqual([
+      { kind: 'text', text: 'Use your order number as the payment reference.', lead: false }
+    ])
+  })
+
+  it('renders the steps as lists on the page', async () => {
+    const order = { ...ORDER, instructions: STEPS.join('\n') }
+    const orderFetch = vi.fn(async () => new Response(JSON.stringify(order)))
+    renderAt('?order=12&key=wc_order_abc123', orderFetch as unknown as typeof fetch)
+    const steps = await screen.findByRole('heading', { name: 'How to transfer' })
+    const section = steps.parentElement as HTMLElement
+    const lists = within(section).getAllByRole('list')
+    expect(lists.map((list) => list.tagName)).toEqual(['OL', 'UL', 'OL'])
+    expect(within(lists[0]).getByText('Confirm with your PIN.')).toBeInTheDocument()
+    expect(within(lists[1]).getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.getByText(/Payment reference:/)).toBeInTheDocument()
   })
 })
