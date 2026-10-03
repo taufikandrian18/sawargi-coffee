@@ -26,17 +26,27 @@ add_action(
 			return;
 		}
 		$secure = strtolower( sawargi_smtp_setting( 'SECURE', 'tls' ) );
+		$port   = (int) sawargi_smtp_setting( 'PORT', 'ssl' === $secure ? '465' : '587' );
 		$user   = sawargi_smtp_setting( 'USER' );
+		// Port 465 only speaks TLS from the first byte. With "tls" (STARTTLS) both sides wait for the
+		// other to talk first and the send hangs, so the port wins over a mismatched setting.
+		if ( 465 === $port ) {
+			$secure = 'ssl';
+		}
 
 		$mailer->isSMTP();
 		$mailer->Host        = $host;
-		$mailer->Port        = (int) sawargi_smtp_setting( 'PORT', 'ssl' === $secure ? '465' : '587' );
+		$mailer->Port        = $port;
 		$mailer->SMTPSecure  = in_array( $secure, array( 'tls', 'ssl' ), true ) ? $secure : '';
 		$mailer->SMTPAutoTLS = 'none' !== $secure;
 		$mailer->SMTPAuth    = '' !== $user;
 		$mailer->Username    = $user;
 		$mailer->Password    = sawargi_smtp_setting( 'PASS' );
 		$mailer->Timeout     = 15;
+		// Cap a whole SMTP read too (PHPMailer's default is 5 minutes), so a checkout never hangs on mail.
+		if ( method_exists( $mailer, 'getSMTPInstance' ) ) {
+			$mailer->getSMTPInstance()->Timelimit = 30;
+		}
 
 		// Most SMTP services only accept mail from the account (or domain) they authenticated, so
 		// the From address is the SMTP sender, whatever WooCommerce's email settings say.
