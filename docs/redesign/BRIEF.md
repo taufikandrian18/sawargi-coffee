@@ -440,10 +440,10 @@ Rules for the flow:
 - [x] Every string in §5 appears verbatim.
   - First move the copy into `src/content/copy.ts`, then redesign.
   - Add a test that imports the copy map and asserts each string renders on `/`.
-- [ ] Scrub video: scrolling top to bottom moves the frame continuously, with no visible stalls, in
+- [x] Scrub video: scrolling top to bottom moves the frame continuously, with no visible stalls, in
       Chrome and Safari at 1440px and 390px. `CinematicVideo` tests still pass.
       *(Step 7: Chrome checked at 1440 and 390; iPhone Safari confirmed by Taufik after the
-      loader fix. Desktop Safari not yet checked.)*
+      loader fix; desktop Safari at 1440 and 390 confirmed by Taufik on the live site, 3 Oct 2026.)*
 - [x] Reduced motion: no Lenis, no pinning, and no split, wiggle, marquee or cursor animation. Every
       section is readable.
 - [x] Keyboard: every link and button is reachable in order, focus is visible, and the mobile menu
