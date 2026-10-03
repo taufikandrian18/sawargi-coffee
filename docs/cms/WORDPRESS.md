@@ -180,6 +180,30 @@ the batch as sold out and blocks it at checkout.
   opening a published post in WordPress sends you to the site.
 - Keep the journal's rule: every claim gets a source. Put sources as a numbered list at the end.
 
+## Email (order emails and new-order alerts)
+
+The WordPress container has no mail server, so WordPress can't send email until SMTP is set.
+`wordpress/mu-plugins/sawargi-mail.php` sends all WordPress and WooCommerce mail through your SMTP
+server. Without it, buyers never get the email with your bank details, and you never hear about
+new orders.
+
+1. On the VPS, add your provider's values to `deploy/.env` (see `.env.example`): `SMTP_HOST`,
+   `SMTP_PORT`, `SMTP_SECURE` (`tls` for 587, `ssl` for 465), `SMTP_USER`, `SMTP_PASS`,
+   `SMTP_FROM`, `SMTP_FROM_NAME`. The password stays on the server only.
+2. Apply: `cd /opt/sawargi-coffee/deploy && docker compose up -d wordpress`. It's recreated with
+   the new settings.
+3. Test:
+   ```bash
+   docker compose run --rm wpcli wp eval 'var_dump(wp_mail("you@example.com","Sawargi mail test","It works."));'
+   ```
+   `bool(true)` and the email in your inbox means it works. On `bool(false)`, the reason is in
+   `docker compose logs wordpress | grep sawargi-mail`.
+4. In **WooCommerce → Settings → Emails**:
+   - set "From" address to the same address as `SMTP_FROM`;
+   - set **New order** recipient to where you want order alerts.
+
+Tencent Cloud blocks outgoing port 25; use 587 or 465.
+
 ## 4. Payments
 
 WooCommerce → Settings → Payments. Install a gateway plugin from Plugins → Add New (search
